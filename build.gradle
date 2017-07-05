@@ -1,0 +1,91 @@
+// Top-level build file where you can add configuration options common to all sub-projects/modules.
+ext {
+    def versionMajor = 0
+    def versionMinor = 1
+    def versionPatch = 0
+    def versionCode = versionPatch + versionMinor * 100 + versionMajor * 10000
+
+    androidConfig = [
+            compileSdkVersion        : 25,
+            buildToolsVersion        : "25.0.3",
+            minSdkVersion            : 16,
+            targetSdkVersion         : 25,
+            versionCode              : versionCode,
+            versionName              : "${versionMajor}.${versionMinor}.${versionPatch}",
+
+            testInstrumentationRunner: "android.support.test.runner.AndroidJUnitRunner"
+    ]
+}
+
+buildscript {
+    ext {
+        depPaths = {
+            def versions = [
+                    gradlePlugin  : '2.3.3',
+                    kotlin        : '1.1.3',
+                    supportLib    : '25.4.0',
+                    rxJava        : '2.1.1',
+                    rxAndroid     : '2.0.1',
+                    androidJob    : '1.1.11',
+                    play          : '11.0.2',
+
+                    junit         : '4.12',
+                    hamkrest      : '1.4.1.0',
+                    mockitoKotlin : '1.5.0',
+                    mockitoAndroid: '2.8.47',
+                    espresso      : '2.2.2',
+            ]
+
+            [
+                    gradlePlugin    : "com.android.tools.build:gradle:$versions.gradlePlugin",
+                    kotlinPlugin    : "org.jetbrains.kotlin:kotlin-gradle-plugin:$versions.kotlin",
+
+                    kotlinStd       : "org.jetbrains.kotlin:kotlin-stdlib-jre7:$versions.kotlin",
+                    kotlinReflect   : "org.jetbrains.kotlin:kotlin-reflect:$versions.kotlin",
+                    supportAppCompat: "com.android.support:appcompat-v7:$versions.supportLib",
+                    supportDesign   : "com.android.support:design:$versions.supportLib",
+                    supportCardView : "com.android.support:cardview-v7:$versions.supportLib",
+                    rxJava          : "io.reactivex.rxjava2:rxjava:$versions.rxJava",
+                    rxAndroid       : "io.reactivex.rxjava2:rxandroid:$versions.rxAndroid",
+                    androidJob      : "com.evernote:android-job:$versions.androidJob",
+                    playGCM         : "com.google.android.gms:play-services-gcm:$versions.play",
+
+                    junit           : "junit:junit:$versions.junit",
+                    hamkrest        : "com.natpryce:hamkrest:$versions.hamkrest",
+                    mockitoKotlin   : "com.nhaarman:mockito-kotlin-kt1.1:$versions.mockitoKotlin",
+                    mockitoAndroid  : "org.mockito:mockito-android:$versions.mockitoAndroid",
+                    espressoCore    : "com.android.support.test.espresso:espresso-core:$versions.espresso",
+            ]
+        }()
+    }
+
+    repositories {
+        jcenter()
+        maven {
+            url "https://maven.google.com"
+        }
+    }
+
+    dependencies {
+        classpath depPaths.gradlePlugin
+        classpath depPaths.kotlinPlugin
+
+        // NOTE: Do not place your application dependencies here; they belong
+        // in the individual module build.gradle files
+    }
+}
+
+allprojects {
+    repositories {
+        jcenter()
+        mavenCentral()
+        maven {
+            url "https://maven.google.com"
+        }
+    }
+
+}
+
+task clean(type: Delete) {
+    delete rootProject.buildDir
+}

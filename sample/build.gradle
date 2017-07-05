@@ -1,0 +1,41 @@
+apply plugin: 'com.android.application'
+apply plugin: 'kotlin-android'
+apply plugin: 'kotlin-android-extensions'
+
+android {
+    compileSdkVersion androidConfig.compileSdkVersion
+    buildToolsVersion androidConfig.buildToolsVersion
+
+    defaultConfig {
+        applicationId "io.tempo.sample"
+        minSdkVersion androidConfig.minSdkVersion
+        targetSdkVersion androidConfig.targetSdkVersion
+        versionCode androidConfig.versionCode
+        versionName androidConfig.versionName
+        testInstrumentationRunner androidConfig.testInstrumentationRunner
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+}
+
+dependencies {
+    compile project(':tempo')
+    compile project(':tempo-android-job-scheduler')
+    compile project(':tempo-android-gps-time-source')
+    compile depPaths.kotlinStd
+    compile depPaths.supportAppCompat
+    compile depPaths.supportDesign
+    compile depPaths.supportCardView
+    compile depPaths.rxJava
+    compile depPaths.rxAndroid
+
+    testCompile depPaths.junit
+    androidTestCompile(depPaths.espressoCore, {
+        exclude group: 'com.android.support', module: 'support-annotations'
+    })
+}
