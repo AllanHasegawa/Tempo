@@ -49,8 +49,10 @@ Add the snippet below in your root build.gradle at the end of repositories:
 Then, add the dependency to your module:
 	
     dependencies {
-        compile 'com.github.AllanHasegawa.tempo:tempo:x.y.z'
+        compile 'com.github.AllanHasegawa.Tempo:tempo:x.y.z'
     }
+    
+[![Release](https://jitpack.io/v/AllanHasegawa/Tempo.svg)](https://jitpack.io/#AllanHasegawa/Tempo)
 
 ## Time Sources
 
@@ -83,7 +85,7 @@ Only use this module if you need this functionality.
 
 To include it in your project, include the dependency:
 
-    compile 'io.tempo.AllanHasegawa.tempo:tempo-android-gps-time-source:x.y.z'
+    compile 'com.github.AllanHasegawa.Tempo:tempo-android-gps-time-source:x.y.z'
     
 Then, add it during initialization:
 
@@ -110,7 +112,7 @@ scheduler to automatically sync its time.
 
 To add, first add its module to your gradle build file:
 
-    compile 'io.tempo.AllanHasegawa:tempo-android-job-scheduler:x.y.z'
+    compile 'com.github.AllanHasegawa.Tempo:tempo-android-job-scheduler:x.y.z'
     
 Then, add it during initialization:
 
