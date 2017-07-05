@@ -14,7 +14,7 @@ Initialize the library in your `Application` class:
 
     class MyApp : Application {
         override fun onCreate() {
-            Tempo.initialize()
+            Tempo.initialize(this)
             ...
         }
     }
