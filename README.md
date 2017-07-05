@@ -1,12 +1,14 @@
 # Tempo
 
-A Kotlin library for Android to get the time from multiple sources: SNTP, GPS; or your own time source.
+A Kotlin library for Android to get the current time from multiple sources: SNTP, GPS; or your own time source.
 
 *Why is it important?*
 
 > System.currentTimeMillis() [...] can be set by the user [...] so the time may jump backwards or forwards unpredictably.
 >
 > -- <cite>https://developer.android.com/reference/android/os/SystemClock.html. July, 2017.</cite>
+
+You can check how Tempo works in this [blog post](https://medium.com/@AllanHasegawa/tempo-a-new-android-library-to-get-the-time-from-multiple-sources-276f7fcff7b7).
 
 ## Basic usage
 
