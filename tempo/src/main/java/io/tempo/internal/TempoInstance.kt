@@ -130,7 +130,6 @@ class TempoInstance(
 
     private fun requestTime(timeSource: TimeSource): Single<TimeSourceWrapper> =
             timeSource.requestTime()
-                    .observeOn(Schedulers.io())
                     .map { reqTime ->
                         val cache = TimeSourceCache(
                                 timeSourceId = timeSource.config().id,
