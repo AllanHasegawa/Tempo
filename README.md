@@ -60,19 +60,9 @@ Then, add the dependency to your module:
 
 *Tempo* comes with two sources for time: `SlackSntpTimeSource` and `AndroidGPSTimeSource`.
 
-### Choosing a time source
-
-*Tempo* will request the current time from each time source. Once the requests are completed,
-the library will pick the *best* time. The *best* time is defined by the source's priority score.
-
-When a request fails, the next successful request with highest priority score is picked.
-If all requests fails, then *Tempo* will adopt a strategy (see `io.tempo.SyncRetryStrategy`) to
-keep retrying.
-
 ### SlackSntpTimeSource
 
-The `SlackSntpTimeSource` is the default time source. It implements a *loose* version of the
-SNTP protocol. While it doesn't guarantee an accurate time, it should be accurate enough for most use cases.
+The `SlackSntpTimeSource` is the default time source. Tempo is using a SNTP client implementation from the Android Framework. However, it's named "slack" because we are not enforcing a minimum roundtrip delay. The main reason behind this decision is because users with poor connection (very common on mobile) may never get a low enough roundtrip delay to successfully complete a SNTP request; retrying will just waste battery and increate data consumption. Therefore, this is the recommended time source to be used for Android.
 
 This time source requires an active internet connection to work.
 
@@ -99,12 +89,12 @@ Then, add it during initialization:
 
 ### Custom time source
 
-You can create your own time source. For that, implement the `io.tempo.TimeSource`
+You can create your own time source. Implement the `io.tempo.TimeSource`
 interface and then add it during initialization:
 
     val customTs = MyCustomTs()
     Tempo.initialize(this,
-      timeSources = listOf(customTs)
+      timeSources = listOf(customTs))
       
       
 ## Schedulers
@@ -112,7 +102,7 @@ interface and then add it during initialization:
 A device's clock slowly drifts away from an accurate time. Therefore, *Tempo* also offers an
 scheduler to automatically sync its time.
 
-To add, first add its module to your gradle build file:
+To add, first include its module to your gradle build file:
 
     compile 'com.github.AllanHasegawa.Tempo:tempo-android-job-scheduler:x.y.z'
     
