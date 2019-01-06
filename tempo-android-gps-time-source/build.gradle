@@ -3,7 +3,6 @@ apply plugin: 'kotlin-android'
 
 android {
     compileSdkVersion androidConfig.compileSdkVersion
-    buildToolsVersion androidConfig.buildToolsVersion
 
     defaultConfig {
         minSdkVersion androidConfig.minSdkVersion
@@ -22,11 +21,15 @@ android {
 }
 
 dependencies {
-    compile project(':tempo')
+    implementation project(':tempo')
+    implementation depPaths.kotlinStd
+    implementation depPaths.rxJava
+    implementation depPaths.rxAndroid
+    implementation depPaths.supportAppCompat
 
-    testCompile depPaths.junit
-    androidTestCompile depPaths.hamkrest
-    androidTestCompile(depPaths.espressoCore, {
+    testImplementation depPaths.junit
+    androidTestImplementation depPaths.hamkrest
+    androidTestImplementation(depPaths.espressoCore, {
         exclude group: 'com.android.support', module: 'support-annotations'
     })
 }

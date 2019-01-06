@@ -16,6 +16,7 @@
 
 package io.tempo.internal
 
+import android.annotation.SuppressLint
 import io.reactivex.Flowable
 import io.reactivex.Single
 import io.reactivex.functions.BiFunction
@@ -33,12 +34,12 @@ import io.tempo.TimeSourceWrapper
 import io.tempo.schedulers.NoOpScheduler
 import java.util.concurrent.TimeUnit
 
-class TempoInstance(
-        val timeSources: List<TimeSource>,
-        val config: TempoConfig,
-        private val storage: Storage,
-        private val deviceClocks: DeviceClocks,
-        private val scheduler: Scheduler) {
+internal class TempoInstance(
+    val timeSources: List<TimeSource>,
+    val config: TempoConfig,
+    private val storage: Storage,
+    private val deviceClocks: DeviceClocks,
+    private val scheduler: Scheduler) {
 
     val initialized get() = activeTimeWrapper() != null
 
@@ -46,7 +47,7 @@ class TempoInstance(
     private val timeWrappers = mutableMapOf<String, TimeSourceWrapper>()
 
     private val eventsSubject = ReplayProcessor.createWithTime<TempoEvent>(
-            1000, TimeUnit.MILLISECONDS, Schedulers.io())
+        1000, TimeUnit.MILLISECONDS, Schedulers.io())
 
     init {
         require(timeSources.isNotEmpty()) {
@@ -56,13 +57,7 @@ class TempoInstance(
             "Duplicate ids in 'timeSources' aren't allowed."
         }
 
-        Flowable.just(timeSources)
-                .doOnNext { eventsSubject.onNext(TempoEvent.Initializing()) }
-                .observeOn(Schedulers.io())
-                .doOnNext { restoreCache() }
-                .doOnNext { setupScheduler() }
-                .flatMap { syncFlow() }
-                .subscribe({}, {}, {})
+        fireUpFirstSyncFlow()
     }
 
     fun observeEvents(): Flowable<TempoEvent> = eventsSubject.onBackpressureLatest()
@@ -73,71 +68,71 @@ class TempoInstance(
 
     fun syncFlow(): Flowable<TempoEvent> {
         return Flowable.fromIterable(timeSources)
-                .observeOn(Schedulers.io())
-                .flatMap { source ->
-                    requestTime(source)
-                            .timeout(config.syncTimeoutMs, TimeUnit.MILLISECONDS)
-                            .toFlowable()
-                            .map { wrapper -> TempoEvent.TSSyncSuccess(wrapper) as TempoEvent }
-                            .startWith(TempoEvent.TSSyncRequest(source) as TempoEvent)
-                            .onErrorReturn { error ->
-                                val defaultMsg = "Error requesting time to '${source.config().id}'"
-                                TempoEvent.TSSyncFailure(source, error, error.message ?: defaultMsg)
-                            }
-                }
-                .publish { flow ->
-                    val endFlow = flow
-                            .buffer(timeSources.size * 2)
-                            .take(1)
-                            .map { it.filter { it is TempoEvent.TSSyncSuccess }.isNotEmpty() }
-                            .map { hasSuccess ->
-                                val activeTw = activeTimeWrapper()
-                                if (hasSuccess && activeTw != null) {
-                                    TempoEvent.SyncSuccess(activeTw)
-                                } else {
-                                    TempoEvent.SyncFail()
-                                }
-                            }
-                    val initializedFlow = Flowable.fromCallable { initialized }
-                            .flatMap {
-                                when (it) {
-                                    true -> Flowable.just(TempoEvent.Initialized())
-                                    else -> Flowable.empty()
-                                }
-                            }
-                    flow.mergeWith(endFlow).concatWith(initializedFlow)
-                }
-                .startWith(TempoEvent.SyncStart())
-                .doOnNext { event ->
-                    eventsSubject.onNext(event)
-                    if (event is TempoEvent.TSSyncSuccess) {
-                        val name = event.wrapper.timeSource.config().id
-                        val cache = event.wrapper.cache
-                        synchronized(timeWrappers) {
-                            storage.putCache(cache)
-                            timeWrappers[name] = event.wrapper
-                            updateActiveTimeWrapper()
-                        }
-                        eventsSubject.onNext(TempoEvent.CacheSaved(cache))
+            .observeOn(Schedulers.io())
+            .flatMap { source ->
+                requestTime(source)
+                    .timeout(config.syncTimeoutMs, TimeUnit.MILLISECONDS)
+                    .toFlowable()
+                    .map { wrapper -> TempoEvent.TSSyncSuccess(wrapper) as TempoEvent }
+                    .startWith(TempoEvent.TSSyncRequest(source) as TempoEvent)
+                    .onErrorReturn { error ->
+                        val defaultMsg = "Error requesting time to '${source.config().id}'"
+                        TempoEvent.TSSyncFailure(source, error, error.message ?: defaultMsg)
                     }
+            }
+            .publish { flow ->
+                val endFlow = flow
+                    .buffer(timeSources.size * 2)
+                    .take(1)
+                    .map { it.any { it is TempoEvent.TSSyncSuccess } }
+                    .map { hasSuccess ->
+                        val activeTw = activeTimeWrapper()
+                        if (hasSuccess && activeTw != null) {
+                            TempoEvent.SyncSuccess(activeTw)
+                        } else {
+                            TempoEvent.SyncFail()
+                        }
+                    }
+                val initializedFlow = Flowable.fromCallable { initialized }
+                    .flatMap {
+                        when (it) {
+                            true -> Flowable.just(TempoEvent.Initialized())
+                            else -> Flowable.empty()
+                        }
+                    }
+                flow.mergeWith(endFlow).concatWith(initializedFlow)
+            }
+            .startWith(TempoEvent.SyncStart())
+            .doOnNext { event ->
+                eventsSubject.onNext(event)
+                if (event is TempoEvent.TSSyncSuccess) {
+                    val name = event.wrapper.timeSource.config().id
+                    val cache = event.wrapper.cache
+                    synchronized(timeWrappers) {
+                        storage.putCache(cache)
+                        timeWrappers[name] = event.wrapper
+                        updateActiveTimeWrapper()
+                    }
+                    eventsSubject.onNext(TempoEvent.CacheSaved(cache))
                 }
-                .repeatWhen { completed ->
-                    val retryFlow = syncRetryStratFlow(config.syncRetryStrategy)
-                    completed.zipWith(retryFlow, BiFunction { _: Any, _: Any -> initialized })
-                            .takeWhile { !it }
-                }
+            }
+            .repeatWhen { completed ->
+                val retryFlow = syncRetryStratFlow(config.syncRetryStrategy)
+                completed.zipWith(retryFlow, BiFunction { _: Any, _: Any -> initialized })
+                    .takeWhile { !it }
+            }
     }
 
     private fun requestTime(timeSource: TimeSource): Single<TimeSourceWrapper> =
-            timeSource.requestTime()
-                    .map { reqTime ->
-                        val cache = TimeSourceCache(
-                                timeSourceId = timeSource.config().id,
-                                estimatedBootTime = deviceClocks.estimatedBootTime(),
-                                requestDeviceUptime = deviceClocks.uptime(),
-                                requestTime = reqTime)
-                        TimeSourceWrapper(timeSource, cache)
-                    }
+        timeSource.requestTime()
+            .map { reqTime ->
+                val cache = TimeSourceCache(
+                    timeSourceId = timeSource.config().id,
+                    estimatedBootTime = deviceClocks.estimatedBootTime(),
+                    requestDeviceUptime = deviceClocks.uptime(),
+                    requestTime = reqTime)
+                TimeSourceWrapper(timeSource, cache)
+            }
 
     private fun updateActiveTimeWrapper() {
         val topPriority = timeWrappers.values.maxBy { it.timeSource.config().priority }
@@ -152,16 +147,16 @@ class TempoInstance(
         }
 
         timeSources
-                .map { source -> source to storage.getCache(source.config().id) }
-                .filter { it.second?.let(::isCacheValid) ?: false }
-                .onEach { it.second?.let { eventsSubject.onNext(TempoEvent.CacheRestored(it)) } }
-                .map { it.first.config().id to TimeSourceWrapper(it.first, it.second!!) }
-                .also {
-                    synchronized(timeWrappers) {
-                        timeWrappers.putAll(it)
-                        updateActiveTimeWrapper()
-                    }
+            .map { source -> source to storage.getCache(source.config().id) }
+            .filter { it.second?.let(::isCacheValid) ?: false }
+            .onEach { it.second?.let { eventsSubject.onNext(TempoEvent.CacheRestored(it)) } }
+            .map { it.first.config().id to TimeSourceWrapper(it.first, it.second!!) }
+            .also {
+                synchronized(timeWrappers) {
+                    timeWrappers.putAll(it)
+                    updateActiveTimeWrapper()
                 }
+            }
     }
 
     private fun setupScheduler() {
@@ -172,13 +167,12 @@ class TempoInstance(
                 eventsSubject.onNext(TempoEvent.SchedulerSetupComplete())
             } catch (e: Exception) {
                 eventsSubject.onNext(TempoEvent.SchedulerSetupFailure(e,
-                        "Error while setting up scheduler."))
+                    "Error while setting up scheduler."))
             }
         } else {
             eventsSubject.onNext(TempoEvent.SchedulerSetupSkip())
         }
     }
-
 
     private fun syncRetryStratFlow(strat: SyncRetryStrategy): Flowable<Any> {
         return when (strat) {
@@ -193,11 +187,22 @@ class TempoInstance(
                 val interval = { idx: Int ->
                     val backoff = Math.pow(2.0, idx.toDouble()) * strat.multiplier
                     val timer = (strat.timerMs + backoff).toLong()
-                            .coerceAtMost(strat.maxIntervalMs)
+                        .coerceAtMost(strat.maxIntervalMs)
                     Flowable.timer(timer, TimeUnit.MILLISECONDS)
                 }
                 tries.concatMap { idx -> interval(idx) }
             }
         }
+    }
+
+    @SuppressLint("CheckResult")
+    private fun fireUpFirstSyncFlow() {
+        Flowable.just(timeSources)
+            .doOnNext { eventsSubject.onNext(TempoEvent.Initializing()) }
+            .observeOn(Schedulers.io())
+            .doOnNext { restoreCache() }
+            .doOnNext { setupScheduler() }
+            .flatMap { syncFlow() }
+            .subscribe({}, {}, {})
     }
 }

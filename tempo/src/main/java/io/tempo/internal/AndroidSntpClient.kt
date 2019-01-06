@@ -19,15 +19,14 @@ package io.tempo.internal
 
 import android.os.SystemClock
 import io.tempo.internal.SntpClient.Result
-import java.lang.Exception
 import java.net.DatagramPacket
 import java.net.DatagramSocket
 import java.net.Inet4Address
 import java.net.InetAddress
-import java.util.*
+import java.util.Arrays
 import kotlin.experimental.and
 
-object AndroidSntpClient : SntpClient {
+internal object AndroidSntpClient : SntpClient {
     class InetException(errorMsg: String) : RuntimeException(errorMsg)
 
     val NTP_PORT = 123

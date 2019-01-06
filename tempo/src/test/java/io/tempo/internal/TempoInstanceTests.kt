@@ -41,12 +41,12 @@ import io.tempo.TimeSourceCache
 import io.tempo.TimeSourceConfig
 import io.tempo.TimeSourceWrapper
 import org.junit.Test
-import java.util.*
+import java.util.Random
 import java.util.concurrent.TimeUnit
 
 
-class TempoInstanceTests {
-    fun defaultInstance(changeParams: Initializer.() -> Unit = {}): TempoInstance {
+internal class TempoInstanceTests {
+    private fun defaultInstance(changeParams: Initializer.() -> Unit = {}): TempoInstance {
         val syncRetryStrategy = SyncRetryStrategy.ConstantInterval(10L, 10L, 3)
         val initializer = Initializer(
                 timeSources = listOf(StubTimeSource()),

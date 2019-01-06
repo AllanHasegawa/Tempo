@@ -3,7 +3,6 @@ apply plugin: 'kotlin-android'
 
 android {
     compileSdkVersion androidConfig.compileSdkVersion
-    buildToolsVersion androidConfig.buildToolsVersion
 
     defaultConfig {
         minSdkVersion androidConfig.minSdkVersion
@@ -22,21 +21,21 @@ android {
 }
 
 dependencies {
-    compile depPaths.kotlinStd
-    compile depPaths.rxJava
-    compile depPaths.rxAndroid
-    compile depPaths.supportAppCompat
+    implementation depPaths.kotlinStd
+    implementation depPaths.rxJava
+    implementation depPaths.rxAndroid
+    implementation depPaths.supportAppCompat
 
-    testCompile depPaths.junit
-    testCompile depPaths.hamkrest
-    testCompile depPaths.kotlinReflect
-    testCompile depPaths.mockitoKotlin
+    testImplementation depPaths.junit
+    testImplementation depPaths.hamkrest
+    testImplementation depPaths.kotlinReflect
+    testImplementation depPaths.mockitoKotlin
 
-    androidTestCompile depPaths.kotlinReflect
-    androidTestCompile depPaths.hamkrest
-    androidTestCompile depPaths.mockitoKotlin
-    androidTestCompile depPaths.mockitoAndroid
-    androidTestCompile(depPaths.espressoCore, {
+    androidTestImplementation depPaths.kotlinReflect
+    androidTestImplementation depPaths.hamkrest
+    androidTestImplementation depPaths.mockitoKotlin
+    androidTestImplementation depPaths.mockitoAndroid
+    androidTestImplementation(depPaths.espressoCore, {
         exclude group: 'com.android.support', module: 'support-annotations'
     })
 }
