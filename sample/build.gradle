@@ -4,7 +4,6 @@ apply plugin: 'kotlin-android-extensions'
 
 android {
     compileSdkVersion androidConfig.compileSdkVersion
-    buildToolsVersion androidConfig.buildToolsVersion
 
     defaultConfig {
         applicationId "io.tempo.sample"
@@ -24,18 +23,18 @@ android {
 }
 
 dependencies {
-    compile project(':tempo')
-    compile project(':tempo-android-job-scheduler')
-    compile project(':tempo-android-gps-time-source')
-    compile depPaths.kotlinStd
-    compile depPaths.supportAppCompat
-    compile depPaths.supportDesign
-    compile depPaths.supportCardView
-    compile depPaths.rxJava
-    compile depPaths.rxAndroid
+    implementation project(':tempo')
+    implementation project(':tempo-android-job-scheduler')
+    implementation project(':tempo-android-gps-time-source')
+    implementation depPaths.kotlinStd
+    implementation depPaths.supportAppCompat
+    implementation depPaths.supportDesign
+    implementation depPaths.supportCardView
+    implementation depPaths.rxJava
+    implementation depPaths.rxAndroid
 
-    testCompile depPaths.junit
-    androidTestCompile(depPaths.espressoCore, {
+    testImplementation depPaths.junit
+    androidTestImplementation(depPaths.espressoCore, {
         exclude group: 'com.android.support', module: 'support-annotations'
     })
 }

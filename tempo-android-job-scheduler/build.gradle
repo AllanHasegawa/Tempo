@@ -3,7 +3,6 @@ apply plugin: 'kotlin-android'
 
 android {
     compileSdkVersion androidConfig.compileSdkVersion
-    buildToolsVersion androidConfig.buildToolsVersion
 
     defaultConfig {
         minSdkVersion androidConfig.minSdkVersion
@@ -22,7 +21,10 @@ android {
 }
 
 dependencies {
-    compile project(':tempo')
-    compile depPaths.androidJob
-    compile depPaths.playGCM
+    implementation project(':tempo')
+    implementation depPaths.kotlinStd
+    implementation depPaths.rxJava
+    implementation depPaths.rxAndroid
+    implementation depPaths.androidJob
+    implementation depPaths.playGCM
 }

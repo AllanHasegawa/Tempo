@@ -36,7 +36,8 @@ import io.tempo.TempoEvent
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.item_tempo_event.view.*
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Date
+import java.util.Locale
 import java.util.concurrent.TimeUnit
 
 class MainActivity : AppCompatActivity() {
@@ -105,16 +106,16 @@ class EventsRvAdapter : RecyclerView.Adapter<EventsRvAdapter.VH>() {
         }
     }
 
-    val events = mutableListOf<TempoEvent>()
+    private val events = mutableListOf<TempoEvent>()
 
     fun addEvent(event: TempoEvent) {
         events.add(event)
         notifyItemInserted(events.size - 1)
     }
 
-    override fun onBindViewHolder(holder: VH?, position: Int) {
+    override fun onBindViewHolder(holder: VH, position: Int) {
         events.getOrNull(position)?.let { event ->
-            holder?.bind(event)
+            holder.bind(event)
         }
     }
 
