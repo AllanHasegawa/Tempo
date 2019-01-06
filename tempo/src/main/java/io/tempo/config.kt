@@ -19,7 +19,7 @@ package io.tempo
 import io.tempo.SyncRetryStrategy.ExpBackoff
 
 sealed class SyncRetryStrategy {
-    class None : SyncRetryStrategy()
+    object None : SyncRetryStrategy()
 
     /**
      * Will retry with the following intervals: [timerMs], [intervalMs], [intervalMs], [intervalMs], ...

@@ -33,9 +33,10 @@ import io.tempo.TimeSource
 import io.tempo.TimeSourceConfig
 
 class AndroidGPSTimeSource(
-        val context: Context,
-        val id: String = "tempo-default-android-gps",
-        val priority: Int = 5) : TimeSource {
+    val context: Context,
+    val id: String = "tempo-default-android-gps",
+    private val priority: Int = 5
+) : TimeSource {
 
     class PermissionNotSet : RuntimeException("We don't have permission to access the GPS.")
 
@@ -45,36 +46,46 @@ class AndroidGPSTimeSource(
         data class GPSInfo(val provider: String, val time: Long)
 
         return Flowable
-                .create<GPSInfo>({ emitter ->
-                    val listener = object : LocationListener {
-                        override fun onLocationChanged(location: Location?) {
-                            location?.let {
+            .create<GPSInfo>({ emitter ->
+                val listener = object : LocationListener {
+                    override fun onLocationChanged(location: Location?) {
+                        location?.let {
+                            if (!emitter.isCancelled) {
                                 emitter.onNext(GPSInfo(location.provider, location.time))
                             }
                         }
-
-                        override fun onStatusChanged(provider: String?, status: Int, extras: Bundle?) {}
-                        override fun onProviderEnabled(provider: String?) {}
-                        override fun onProviderDisabled(provider: String?) {}
                     }
 
-                    val hasPermission = ContextCompat.checkSelfPermission(context,
-                            Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
-                    if (hasPermission) {
-                        val mgr = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
-                        emitter.setCancellable {
-                            mgr.removeUpdates(listener)
-                        }
-                        mgr.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0L, 0.0f, listener, null)
-                    } else {
-                        throw PermissionNotSet()
+                    override fun onStatusChanged(provider: String?, status: Int, extras: Bundle?) {}
+                    override fun onProviderEnabled(provider: String?) {}
+                    override fun onProviderDisabled(provider: String?) {}
+                }
+
+                val hasPermission = ContextCompat.checkSelfPermission(
+                    context,
+                    Manifest.permission.ACCESS_FINE_LOCATION
+                ) == PackageManager.PERMISSION_GRANTED
+                if (hasPermission) {
+                    val mgr = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
+                    emitter.setCancellable {
+                        mgr.removeUpdates(listener)
                     }
-                }, BackpressureStrategy.BUFFER)
-                .subscribeOn(AndroidSchedulers.mainThread())
-                .observeOn(Schedulers.io())
-                .filter { it.provider == LocationManager.GPS_PROVIDER }
-                .map { it.time }
-                .take(1)
-                .singleOrError()
+                    mgr.requestLocationUpdates(
+                        LocationManager.GPS_PROVIDER,
+                        0L,
+                        0.0f,
+                        listener,
+                        null
+                    )
+                } else {
+                    throw PermissionNotSet()
+                }
+            }, BackpressureStrategy.BUFFER)
+            .subscribeOn(AndroidSchedulers.mainThread())
+            .observeOn(Schedulers.io())
+            .filter { it.provider == LocationManager.GPS_PROVIDER }
+            .map { it.time }
+            .take(1)
+            .singleOrError()
     }
 }

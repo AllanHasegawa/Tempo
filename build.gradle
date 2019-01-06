@@ -2,7 +2,7 @@
 ext {
     def versionMajor = 0
     def versionMinor = 1
-    def versionPatch = 1
+    def versionPatch = 2
     def versionCode = versionPatch + versionMinor * 100 + versionMajor * 10000
 
     androidConfig = [

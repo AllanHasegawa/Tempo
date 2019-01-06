@@ -21,10 +21,9 @@ import android.content.Context
 import io.tempo.Storage
 import io.tempo.TimeSourceCache
 
-
-class SharedPrefStorage(val context: Context) : Storage {
+class SharedPrefStorage(private val context: Context) : Storage {
     companion object {
-        private val FILE = "tempo-storage"
+        private const val FILE = "tempo-storage"
         private fun keyCacheEstBootTime(name: String) = "$name-est-boot-time"
         private fun keyCacheReqUptime(name: String) = "$name-req-uptime"
         private fun keyCacheReqTime(name: String) = "$name-req-time"
@@ -32,7 +31,7 @@ class SharedPrefStorage(val context: Context) : Storage {
 
     private val accessLock = Any()
 
-    @SuppressLint("CommitPrefEdits")
+    @SuppressLint("CommitPrefEdits", "ApplySharedPref")
     override fun putCache(cache: TimeSourceCache) {
         synchronized(accessLock) {
             getSharedPref().edit().apply {
@@ -52,15 +51,15 @@ class SharedPrefStorage(val context: Context) : Storage {
             val reqTime = getSharedPref().getLong(keyCacheReqTime(timeSourceId), -1L)
             return when (reqUptime > 0L && reqTime > 0L && estBootTime > 0L) {
                 true -> TimeSourceCache(timeSourceId,
-                        estimatedBootTime = estBootTime,
-                        requestDeviceUptime = reqUptime,
-                        requestTime = reqTime)
+                    estimatedBootTime = estBootTime,
+                    requestDeviceUptime = reqUptime,
+                    requestTime = reqTime)
                 else -> null
             }
         }
     }
 
-    @SuppressLint("CommitPrefEdits")
+    @SuppressLint("CommitPrefEdits", "ApplySharedPref")
     override fun clearCaches() {
         synchronized(accessLock) {
             getSharedPref().edit().clear().commit()

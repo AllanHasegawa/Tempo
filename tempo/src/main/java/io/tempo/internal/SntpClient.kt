@@ -18,7 +18,7 @@ package io.tempo.internal
 
 import java.net.InetAddress
 
-interface SntpClient {
+internal interface SntpClient {
     sealed class Result {
         /**
          * @property[ntpTimeMs] The resulting time in milliseconds at the time the request completed.

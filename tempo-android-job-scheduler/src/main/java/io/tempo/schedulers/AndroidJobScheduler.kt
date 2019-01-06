@@ -26,26 +26,29 @@ import io.tempo.Tempo
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
-class AndroidJobScheduler(val application: Application,
-                          val periodicIntervalMinutes: Long = 60L) : Scheduler {
+class AndroidJobScheduler(
+    val application: Application,
+    val periodicIntervalMinutes: Long = 60L
+) : Scheduler {
     companion object {
-        private val JOB_TAG = "tempo-android-job-scheduler"
-        private val PKEY_INTERVAL_MIN = "tempo-interval"
+        private const val JOB_TAG = "tempo-android-job-scheduler"
+        private const val PKEY_INTERVAL_MIN = "tempo-interval"
 
         private fun schedule(intervalMinutes: Long, updateCurrent: Boolean) {
-            val startMinutes = intervalMinutes
             val endMinutes = intervalMinutes * 2
 
             val toMs = { minutes: Long -> minutes * 60L * 1000L }
             JobRequest.Builder(JOB_TAG)
-                    .setExecutionWindow(toMs(startMinutes), toMs(endMinutes))
-                    .setPersisted(true)
-                    .setUpdateCurrent(updateCurrent)
-                    .setExtras(PersistableBundleCompat().apply {
+                .setExecutionWindow(toMs(intervalMinutes), toMs(endMinutes))
+                .setPersisted(true)
+                .setUpdateCurrent(updateCurrent)
+                .setExtras(
+                    PersistableBundleCompat().apply {
                         putLong(PKEY_INTERVAL_MIN, intervalMinutes)
-                    })
-                    .build()
-                    .schedule()
+                    }
+                )
+                .build()
+                .schedule()
         }
     }
 

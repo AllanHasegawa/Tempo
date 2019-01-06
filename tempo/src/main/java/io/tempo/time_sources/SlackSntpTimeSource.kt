@@ -23,6 +23,7 @@ import io.tempo.TimeSourceConfig
 import io.tempo.internal.AndroidSntpClient
 import io.tempo.internal.SntpClient
 import io.tempo.internal.SntpClient.Result
+import java.net.InetAddress
 
 /**
  * A [TimeSource] implementation using a more forgiving SNTP algorithm. It queries the [ntpPool]
@@ -37,72 +38,97 @@ import io.tempo.internal.SntpClient.Result
  * @param[timeoutMs] The maximum time allowed per each query, in milliseconds.
  */
 class SlackSntpTimeSource(val id: String = "default-slack-sntp",
-                          val priority: Int = 10,
-                          val ntpPool: String = "time.google.com",
-                          val maxRoundTripMs: Int = 1_000,
-                          val timeoutMs: Int = 10_000) : TimeSource {
+    private val priority: Int = 10,
+    private val ntpPool: String = "time.google.com",
+    private val maxRoundTripMs: Int = 1_000,
+    private val timeoutMs: Int = 10_000
+) : TimeSource {
 
-    class AllRequestsFailure(errorMsg: String, val failures: List<Result.Failure>)
-        : RuntimeException(errorMsg, failures.firstOrNull()?.error)
+    class AllRequestsFailure(errorMsg: String, cause: Throwable?)
+        : RuntimeException(errorMsg, cause)
 
     override fun config() = TimeSourceConfig(id = id, priority = priority)
 
-    override fun requestTime(): Single<Long> {
-        return Single
-                .fromCallable { AndroidSntpClient.queryHostAddress(ntpPool) }
-                .subscribeOn(Schedulers.io())
-                .observeOn(Schedulers.io())
-                .flatMap { address ->
-                    val createRequest = {
-                        Single
-                                .fromCallable {
-                                    AndroidSntpClient.requestTime(address,
-                                            AndroidSntpClient.NTP_PORT, timeoutMs)
-                                }
-                                .onErrorReturn { error ->
-                                    val msg = error.message ?: "Error requesting time source time."
-                                    Result.Failure(error, msg)
-                                }
-                                .subscribeOn(Schedulers.io())
-                                .observeOn(Schedulers.io())
+    override fun requestTime(): Single<Long> =
+        Single
+            .create<InetAddress> { emitter ->
+                try {
+                    val result = AndroidSntpClient.queryHostAddress(ntpPool)
+                    if (!emitter.isDisposed) {
+                        emitter.onSuccess(result)
                     }
-
-                    // Make 5 requests
-                    val requests = (1..5).map { createRequest() }
-
-                    // Wait for completion, then join them
-                    Single.zip(requests) {
-                        @Suppress("UNCHECKED_CAST")
-                        it.toList() as List<SntpClient.Result>
-                    }
+                } catch (t: Throwable) {
+                    emitter.tryOnError(t)
                 }
-                .map { rawResults ->
-                    val results = rawResults
-                            .map {
-                                when (it) {
-                                    is Result.Success -> when (it.roundTripTimeMs > maxRoundTripMs) {
-                                        true -> Result.Failure(null, "RoundTrip time exceeded allowed threshold:" +
-                                                " took ${it.roundTripTimeMs}, but max is $maxRoundTripMs")
-                                        else -> it
-                                    }
-                                    else -> it
-                                }
-                            }
+            }
+            .subscribeOn(Schedulers.io())
+            .observeOn(Schedulers.io())
+            .flatMap { address ->
+                // Make 5 requests
+                val requests = (1..5).map { requestTimeToAddress(address) }
 
-                    val successes = results.map { it as? Result.Success }.filterNotNull()
-                    if (successes.isNotEmpty()) {
-                        // If at least one succeeds, sort by 'round trip time' and get median.
-                        successes
-                                .sortedBy { it.roundTripTimeMs }
-                                .map { it.ntpTimeMs }
-                                .elementAt(successes.size / 2)
-                    } else {
-                        // If all fail, throw 'AllRequestsFailure' exception.
-                        val failures = results.map { it as? Result.Failure }.filterNotNull()
-                        val msgs = failures.map { it.errorMsg }.joinToString("; ", prefix = "[", postfix = "]")
-                        val errorMsg = "All NTP requests failed: $msgs"
-                        throw AllRequestsFailure(errorMsg, failures)
-                    }
+                // Wait for completion, then join them
+                Single.zip(requests) {
+                    @Suppress("UNCHECKED_CAST")
+                    it.toList() as List<SntpClient.Result>
                 }
-    }
+            }
+            .map { rawResults ->
+                val results = turnSlowRequestsIntoFailure(rawResults)
+
+                val successes = results.mapNotNull { it as? Result.Success }
+                if (successes.isNotEmpty()) {
+                    // If at least one succeeds, sort by 'round trip time' and get median.
+                    successes
+                        .sortedBy { it.roundTripTimeMs }
+                        .map { it.ntpTimeMs }
+                        .elementAt(successes.size / 2)
+                } else {
+                    // If all fail, throw 'AllRequestsFailure' exception.
+                    val failures = results.mapNotNull { it as? Result.Failure }
+                    val msgs = failures.joinToString("; ", prefix = "[", postfix = "]") { it.errorMsg }
+                    val errorMsg = "All NTP requests failed: $msgs"
+                    val cause = failures.firstOrNull()?.error
+                    throw AllRequestsFailure(errorMsg, cause)
+                }
+            }
+
+    private fun turnSlowRequestsIntoFailure(rawResults: List<Result>): List<Result> =
+        rawResults.map {
+            when (it) {
+                is Result.Success -> when (it.roundTripTimeMs > maxRoundTripMs) {
+                    true -> Result.Failure(
+                        null,
+                        "RoundTrip time exceeded allowed threshold:" +
+                            " took ${it.roundTripTimeMs}, but max is $maxRoundTripMs"
+                    )
+                    else -> it
+                }
+                else -> it
+            }
+        }
+
+    private fun requestTimeToAddress(address: InetAddress) =
+        Single
+            .create<SntpClient.Result> { emitter ->
+                try {
+                    val result = AndroidSntpClient.requestTime(
+                        address,
+                        AndroidSntpClient.NTP_PORT,
+                        timeoutMs
+                    )
+
+                    if (!emitter.isDisposed) {
+                        emitter.onSuccess(result)
+                    }
+                } catch (t: Throwable) {
+                    emitter.tryOnError(t)
+                }
+            }
+            .subscribeOn(Schedulers.io())
+            .observeOn(Schedulers.io())
+            .onErrorReturn { error ->
+                val msg = error.message ?: "Error requesting time source time."
+                Result.Failure(error, msg)
+            }
 }
