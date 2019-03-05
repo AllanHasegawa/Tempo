@@ -104,16 +104,14 @@ scheduler to automatically sync its time.
 
 To add, first include its module to your gradle build file:
 
-    compile 'com.github.AllanHasegawa.Tempo:tempo-android-job-scheduler:x.y.z'
+    compile 'com.github.AllanHasegawa.Tempo:tempo-android-workmanager-scheduler:x.y.z'
     
 Then, add it during initialization:
 
     Tempo.initialize(this,
-      scheduler = AndroidJobScheduler(this, periodicIntervalMinutes = 60L))
+      scheduler = WorkManagerScheduler(periodicIntervalMinutes = 60L))
 
-This module uses the awesome [android-job](https://github.com/evernote/android-job) library.
-Unfortunately it also means we are also using the `GcmNetworkManager` dependency–a really heavy
-dependency. That's why you have to add it manually if you want it.
+Note: The old `tempo-android-job-scheduler` is **deprecated** and no longer supported.
 
 ## FAQ
 

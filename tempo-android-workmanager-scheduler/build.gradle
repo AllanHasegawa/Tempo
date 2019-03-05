@@ -1,12 +1,10 @@
-apply plugin: 'com.android.application'
+apply plugin: 'com.android.library'
 apply plugin: 'kotlin-android'
-apply plugin: 'kotlin-android-extensions'
 
 android {
     compileSdkVersion androidConfig.compileSdkVersion
 
     defaultConfig {
-        applicationId "io.tempo.sample"
         minSdkVersion androidConfig.minSdkVersion
         targetSdkVersion androidConfig.targetSdkVersion
         versionCode androidConfig.versionCode
@@ -24,17 +22,7 @@ android {
 
 dependencies {
     implementation project(':tempo')
-    implementation project(':tempo-android-workmanager-scheduler')
-    implementation project(':tempo-android-gps-time-source')
     implementation depPaths.kotlinStd
-    implementation depPaths.supportAppCompat
-    implementation depPaths.supportDesign
-    implementation depPaths.supportCardView
     implementation depPaths.rxJava
-    implementation depPaths.rxAndroid
-
-    testImplementation depPaths.junit
-    androidTestImplementation(depPaths.espressoCore, {
-        exclude group: 'com.android.support', module: 'support-annotations'
-    })
+    implementation depPaths.workManager
 }
