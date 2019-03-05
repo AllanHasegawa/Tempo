@@ -19,17 +19,23 @@ package io.tempo.sample
 import android.app.Application
 import android.util.Log
 import io.tempo.Tempo
-import io.tempo.schedulers.AndroidJobScheduler
+import io.tempo.schedulers.WorkManagerScheduler
 import io.tempo.time_sources.AndroidGPSTimeSource
 import io.tempo.time_sources.SlackSntpTimeSource
 
 class MyApp : Application() {
     override fun onCreate() {
-        Tempo.observeEvents().subscribe {
-            Log.i("Tempo", it.toString())
-        }
-        Tempo.initialize(this,
-                timeSources = listOf(SlackSntpTimeSource(), AndroidGPSTimeSource(this)),
-                scheduler = AndroidJobScheduler(this, periodicIntervalMinutes = 15L))
+        super.onCreate()
+
+        Tempo.observeEvents()
+            .subscribe {
+                Log.i("Tempo", it.toString())
+            }
+
+        Tempo.initialize(
+            application = this,
+            timeSources = listOf(SlackSntpTimeSource(), AndroidGPSTimeSource(this)),
+            scheduler = WorkManagerScheduler(periodicIntervalMinutes = 60L)
+        )
     }
 }
