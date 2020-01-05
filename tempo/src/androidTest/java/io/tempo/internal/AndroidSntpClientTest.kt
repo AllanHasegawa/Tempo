@@ -16,7 +16,7 @@
 
 package io.tempo.internal
 
-import android.support.test.runner.AndroidJUnit4
+import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.natpryce.hamkrest.assertion.assert
 import com.natpryce.hamkrest.isA
 import com.natpryce.hamkrest.lessThan

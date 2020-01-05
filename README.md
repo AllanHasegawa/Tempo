@@ -104,7 +104,7 @@ scheduler to automatically sync its time.
 
 To add, first include its module to your gradle build file:
 
-    compile 'com.github.AllanHasegawa.Tempo:tempo-android-workmanager-scheduler:x.y.z'
+    compile 'com.github.fangzhzh.Tempo:tempo-android-workmanager-scheduler:x.y.z'
     
 Then, add it during initialization:
 

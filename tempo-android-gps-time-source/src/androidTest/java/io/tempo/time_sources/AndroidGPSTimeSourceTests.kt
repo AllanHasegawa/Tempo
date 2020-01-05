@@ -22,9 +22,9 @@ import android.location.Location
 import android.location.LocationManager
 import android.location.LocationProvider
 import android.os.Build
-import android.support.annotation.RequiresApi
-import android.support.test.InstrumentationRegistry
-import android.support.test.runner.AndroidJUnit4
+import androidx.annotation.RequiresApi
+import androidx.test.platform.app.InstrumentationRegistry
+import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.natpryce.hamkrest.assertion.assert
 import com.natpryce.hamkrest.equalTo
 import io.reactivex.schedulers.Schedulers
@@ -35,7 +35,7 @@ import java.util.concurrent.TimeUnit
 
 @RunWith(AndroidJUnit4::class)
 class AndroidGPSTimeSourceTests {
-    val application = InstrumentationRegistry.getTargetContext().applicationContext as Application
+    val application = InstrumentationRegistry.getInstrumentation().targetContext.applicationContext as Application
 
     @Test
     @RequiresApi(Build.VERSION_CODES.JELLY_BEAN_MR1)

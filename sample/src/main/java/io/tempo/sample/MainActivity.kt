@@ -19,11 +19,9 @@ package io.tempo.sample
 import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Bundle
-import android.support.v4.app.ActivityCompat
-import android.support.v4.content.ContextCompat
-import android.support.v7.app.AppCompatActivity
-import android.support.v7.widget.LinearLayoutManager
-import android.support.v7.widget.RecyclerView
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
+import androidx.appcompat.app.AppCompatActivity
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
@@ -48,7 +46,8 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        main_events_rv.layoutManager = LinearLayoutManager(this)
+        main_events_rv.layoutManager =
+            androidx.recyclerview.widget.LinearLayoutManager(this)
         eventsRvAdapter = EventsRvAdapter()
         main_events_rv.adapter = eventsRvAdapter
 
@@ -98,8 +97,8 @@ class MainActivity : AppCompatActivity() {
     }
 }
 
-class EventsRvAdapter : RecyclerView.Adapter<EventsRvAdapter.VH>() {
-    class VH(itemView: View) : RecyclerView.ViewHolder(itemView) {
+class EventsRvAdapter : androidx.recyclerview.widget.RecyclerView.Adapter<EventsRvAdapter.VH>() {
+    class VH(itemView: View) : androidx.recyclerview.widget.RecyclerView.ViewHolder(itemView) {
         fun bind(event: TempoEvent) {
             itemView.item_tempo_time_tv.text = formatTimestamp(event.systemTime)
             itemView.item_tempo_event_tv.text = formatTempoEvent(event)

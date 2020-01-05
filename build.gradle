@@ -1,7 +1,7 @@
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
 ext {
     def versionMajor = 0
-    def versionMinor = 2
+    def versionMinor = 3
     def versionPatch = 0
     def versionCode = versionPatch + versionMinor * 100 + versionMajor * 10000
 
@@ -12,7 +12,7 @@ ext {
             versionCode              : versionCode,
             versionName              : "${versionMajor}.${versionMinor}.${versionPatch}",
 
-            testInstrumentationRunner: "android.support.test.runner.AndroidJUnitRunner"
+            testInstrumentationRunner: "androidx.test.runner.AndroidJUnitRunner"
     ]
 }
 
@@ -22,14 +22,12 @@ buildscript {
             def versions = [
                     gradlePlugin  : '3.3.2',
                     kotlin        : '1.3.21',
-                    supportLib    : '28.0.0',
                     rxJava        : '2.2.7',
                     rxAndroid     : '2.1.1',
                     androidJob    : '1.1.11',
                     play          : '11.0.2',
                     workManager   : '1.0.0-rc02',
-
-                    junit         : '4.12',
+                    junit         : '1.1.0',
                     hamkrest      : '1.4.1.0',
                     mockitoKotlin : '1.5.0',
                     mockitoAndroid: '2.8.47',
@@ -42,20 +40,19 @@ buildscript {
 
                     kotlinStd       : "org.jetbrains.kotlin:kotlin-stdlib:$versions.kotlin",
                     kotlinReflect   : "org.jetbrains.kotlin:kotlin-reflect:$versions.kotlin",
-                    supportAppCompat: "com.android.support:appcompat-v7:$versions.supportLib",
-                    supportDesign   : "com.android.support:design:$versions.supportLib",
-                    supportCardView : "com.android.support:cardview-v7:$versions.supportLib",
+                    supportAppCompat: "androidx.appcompat:appcompat:1.0.0",
+                    recyclerView    : "androidx.recyclerview:recyclerview:1.1.0",
+//                    supportDesign   : "com.android.support:design:$versions.supportLib",
+                    supportCardView : "androidx.cardview:cardview:1.0.0",
                     rxJava          : "io.reactivex.rxjava2:rxjava:$versions.rxJava",
                     rxAndroid       : "io.reactivex.rxjava2:rxandroid:$versions.rxAndroid",
                     androidJob      : "com.evernote:android-job:$versions.androidJob",
                     playGCM         : "com.google.android.gms:play-services-gcm:$versions.play",
                     workManager     : "android.arch.work:work-runtime:$versions.workManager",
-
-                    junit           : "junit:junit:$versions.junit",
+                    junit           : "androidx.test.ext:junit:$versions.junit",
                     hamkrest        : "com.natpryce:hamkrest:$versions.hamkrest",
                     mockitoKotlin   : "com.nhaarman:mockito-kotlin-kt1.1:$versions.mockitoKotlin",
                     mockitoAndroid  : "org.mockito:mockito-android:$versions.mockitoAndroid",
-                    espressoCore    : "com.android.support.test.espresso:espresso-core:$versions.espresso",
             ]
         }()
     }

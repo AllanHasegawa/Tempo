@@ -10,6 +10,7 @@ android {
         versionCode androidConfig.versionCode
         versionName androidConfig.versionName
         testInstrumentationRunner androidConfig.testInstrumentationRunner
+        multiDexEnabled true
     }
 
     buildTypes {
@@ -25,6 +26,8 @@ dependencies {
     implementation depPaths.rxJava
     implementation depPaths.rxAndroid
     implementation depPaths.supportAppCompat
+    implementation 'androidx.multidex:multidex:2.0.1'
+
 
     testImplementation depPaths.junit
     testImplementation depPaths.hamkrest
@@ -35,7 +38,6 @@ dependencies {
     androidTestImplementation depPaths.hamkrest
     androidTestImplementation depPaths.mockitoKotlin
     androidTestImplementation depPaths.mockitoAndroid
-    androidTestImplementation(depPaths.espressoCore, {
-        exclude group: 'com.android.support', module: 'support-annotations'
-    })
+    androidTestImplementation 'androidx.test:runner:1.2.0'
+    androidTestImplementation depPaths.junit
 }

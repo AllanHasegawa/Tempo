@@ -27,9 +27,7 @@ dependencies {
     implementation depPaths.rxAndroid
     implementation depPaths.supportAppCompat
 
-    testImplementation depPaths.junit
+    androidTestImplementation depPaths.junit
+    androidTestImplementation 'androidx.test:runner:1.2.0'
     androidTestImplementation depPaths.hamkrest
-    androidTestImplementation(depPaths.espressoCore, {
-        exclude group: 'com.android.support', module: 'support-annotations'
-    })
 }

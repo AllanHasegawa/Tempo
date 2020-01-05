@@ -28,13 +28,10 @@ dependencies {
     implementation project(':tempo-android-gps-time-source')
     implementation depPaths.kotlinStd
     implementation depPaths.supportAppCompat
-    implementation depPaths.supportDesign
+    implementation depPaths.recyclerView
     implementation depPaths.supportCardView
     implementation depPaths.rxJava
     implementation depPaths.rxAndroid
 
     testImplementation depPaths.junit
-    androidTestImplementation(depPaths.espressoCore, {
-        exclude group: 'com.android.support', module: 'support-annotations'
-    })
 }
