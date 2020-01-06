@@ -26,7 +26,7 @@ dependencies {
     implementation depPaths.rxJava
     implementation depPaths.rxAndroid
     implementation depPaths.supportAppCompat
-    implementation 'androidx.multidex:multidex:2.0.1'
+    implementation depPaths.multidex
 
 
     testImplementation depPaths.junit
@@ -38,6 +38,6 @@ dependencies {
     androidTestImplementation depPaths.hamkrest
     androidTestImplementation depPaths.mockitoKotlin
     androidTestImplementation depPaths.mockitoAndroid
-    androidTestImplementation 'androidx.test:runner:1.2.0'
+    androidTestImplementation depPaths.testRunner
     androidTestImplementation depPaths.junit
 }

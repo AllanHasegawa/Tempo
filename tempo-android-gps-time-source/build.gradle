@@ -28,6 +28,6 @@ dependencies {
     implementation depPaths.supportAppCompat
 
     androidTestImplementation depPaths.junit
-    androidTestImplementation 'androidx.test:runner:1.2.0'
+    androidTestImplementation depPaths.testRunner
     androidTestImplementation depPaths.hamkrest
 }
