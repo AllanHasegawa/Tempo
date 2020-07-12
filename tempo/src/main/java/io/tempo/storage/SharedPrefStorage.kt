@@ -18,53 +18,70 @@ package io.tempo.storage
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.content.SharedPreferences
 import io.tempo.Storage
 import io.tempo.TimeSourceCache
+import kotlin.reflect.KClass
 
 class SharedPrefStorage(private val context: Context) : Storage {
     companion object {
         private const val FILE = "tempo-storage"
-        private fun keyCacheEstBootTime(name: String) = "$name-est-boot-time"
-        private fun keyCacheReqUptime(name: String) = "$name-req-uptime"
-        private fun keyCacheReqTime(name: String) = "$name-req-time"
+
+        private fun keyCacheEstBootTime(name: String) = Config("$name-est-boot-time", Long::class)
+        private fun keyCacheReqUptime(name: String) = Config("$name-req-uptime", Long::class)
+        private fun keyCacheReqTime(name: String) = Config("$name-req-time", Long::class)
+        private fun keyBootCount(name: String) = Config("$name-req-boot-count", Int::class)
     }
 
     private val accessLock = Any()
 
-    @SuppressLint("CommitPrefEdits", "ApplySharedPref")
-    override fun putCache(cache: TimeSourceCache) {
-        synchronized(accessLock) {
-            getSharedPref().edit().apply {
-                val timeSourceId = cache.timeSourceId
-                putLong(keyCacheEstBootTime(timeSourceId), cache.estimatedBootTime)
-                putLong(keyCacheReqUptime(timeSourceId), cache.requestDeviceUptime)
-                putLong(keyCacheReqTime(timeSourceId), cache.requestTime)
-                commit()
-            }
+    override fun putCache(cache: TimeSourceCache): Unit = synchronized(accessLock) {
+        getSharedPref().edit().run {
+            val timeSourceId = cache.timeSourceId
+            put(keyCacheEstBootTime(timeSourceId), cache.estimatedBootTime)
+            put(keyCacheReqUptime(timeSourceId), cache.requestDeviceUptime)
+            put(keyCacheReqTime(timeSourceId), cache.requestTime)
+            cache.bootCount?.let { put(keyBootCount(timeSourceId), it) }
+            commit()
         }
     }
 
-    override fun getCache(timeSourceId: String): TimeSourceCache? {
-        synchronized(accessLock) {
-            val estBootTime = getSharedPref().getLong(keyCacheEstBootTime(timeSourceId), -1L)
-            val reqUptime = getSharedPref().getLong(keyCacheReqUptime(timeSourceId), -1L)
-            val reqTime = getSharedPref().getLong(keyCacheReqTime(timeSourceId), -1L)
-            return when (reqUptime > 0L && reqTime > 0L && estBootTime > 0L) {
-                true -> TimeSourceCache(timeSourceId,
-                    estimatedBootTime = estBootTime,
-                    requestDeviceUptime = reqUptime,
-                    requestTime = reqTime)
-                else -> null
-            }
+    override fun getCache(timeSourceId: String): TimeSourceCache? = synchronized(accessLock) {
+        with(getSharedPref()) {
+            TimeSourceCache(
+                timeSourceId = timeSourceId,
+                estimatedBootTime = get(keyCacheEstBootTime(timeSourceId)) ?: return null,
+                requestDeviceUptime = get(keyCacheReqUptime(timeSourceId)) ?: return null,
+                requestTime = get(keyCacheReqTime(timeSourceId)) ?: return null,
+                bootCount = get(keyBootCount(timeSourceId))
+            )
         }
     }
 
-    @SuppressLint("CommitPrefEdits", "ApplySharedPref")
-    override fun clearCaches() {
-        synchronized(accessLock) {
-            getSharedPref().edit().clear().commit()
-        }
+    @SuppressLint("ApplySharedPref")
+    override fun clearCaches(): Unit = synchronized(accessLock) {
+        getSharedPref().edit().clear().commit()
     }
 
     private fun getSharedPref() = context.getSharedPreferences(FILE, Context.MODE_PRIVATE)
+
+    private fun SharedPreferences.Editor.put(config: Config<Long>, value: Long) =
+        putLong(config.key, value)
+
+    private fun SharedPreferences.Editor.put(config: Config<Int>, value: Int) =
+        putInt(config.key, value)
+
+    private fun SharedPreferences.get(config: Config<Long>): Long? =
+        when (val value = getLong(config.key, -1L)) {
+            -1L -> null
+            else -> value
+        }
+
+    private fun SharedPreferences.get(config: Config<Int>): Int? =
+        when (val value = getInt(config.key, -1)) {
+            -1 -> null
+            else -> value
+        }
+
+    private data class Config<T : Any>(val key: String, val type: KClass<T>)
 }

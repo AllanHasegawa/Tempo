@@ -40,7 +40,7 @@ object Tempo {
             timeSources: List<TimeSource> = listOf(SlackSntpTimeSource()),
             config: TempoConfig = TempoConfig(),
             storage: Storage = SharedPrefStorage(application),
-            deviceClocks: DeviceClocks = AndroidDeviceClocks(),
+            deviceClocks: DeviceClocks = AndroidDeviceClocks(application),
             scheduler: Scheduler = NoOpScheduler()) {
 
         synchronized(instanceLock) {

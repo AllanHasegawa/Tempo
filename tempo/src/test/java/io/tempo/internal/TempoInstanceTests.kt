@@ -44,30 +44,29 @@ import org.junit.Test
 import java.util.Random
 import java.util.concurrent.TimeUnit
 
-
 internal class TempoInstanceTests {
     private fun defaultInstance(changeParams: Initializer.() -> Unit = {}): TempoInstance {
         val syncRetryStrategy = SyncRetryStrategy.ConstantInterval(10L, 10L, 3)
         val initializer = Initializer(
-                timeSources = listOf(StubTimeSource()),
-                config = TempoConfig(syncRetryStrategy = syncRetryStrategy),
-                storage = StubStorage(),
-                deviceClocks = StubDeviceClocks(),
-                scheduler = schedulerMock)
+            timeSources = listOf(StubTimeSource()),
+            config = TempoConfig(syncRetryStrategy = syncRetryStrategy),
+            storage = StubStorage(),
+            deviceClocks = StubDeviceClocks(),
+            scheduler = schedulerMock)
         changeParams.invoke(initializer)
         return TempoInstance(
-                timeSources = initializer.timeSources,
-                config = initializer.config,
-                storage = initializer.storage,
-                deviceClocks = initializer.deviceClocks,
-                scheduler = initializer.scheduler)
+            timeSources = initializer.timeSources,
+            config = initializer.config,
+            storage = initializer.storage,
+            deviceClocks = initializer.deviceClocks,
+            scheduler = initializer.scheduler)
     }
 
 
     @Test
     fun testInit_emptyTs() {
         assert.that({ defaultInstance { timeSources = emptyList() } },
-                throws<IllegalArgumentException>())
+            throws<IllegalArgumentException>())
     }
 
     @Test
@@ -199,7 +198,7 @@ internal class TempoInstanceTests {
         val stubTs1 = StubTimeSource("stub1")
 
         listOf(stubTs0, stubTs1)[Random().nextInt(2)]
-                .error = RuntimeException()
+            .error = RuntimeException()
 
         val tempo = defaultInstance {
             timeSources = listOf(stubTs0, stubTs1)
@@ -332,7 +331,35 @@ internal class TempoInstanceTests {
         val mockStorage = mock<Storage>()
 
         val validCache = TimeSourceCache(stubTs0.id, stubDC.estimatedBootTime,
-                requestTime = 1000L, requestDeviceUptime = 12L)
+            requestTime = 1000L, requestDeviceUptime = 12L,
+            bootCount = null)
+        whenever(mockStorage.getCache(stubTs0.id)).thenReturn(validCache)
+
+        val tempo = defaultInstance {
+            timeSources = listOf(stubTs0)
+            deviceClocks = stubDC
+            storage = mockStorage
+        }
+        tempo.observeEvents().takeUntil { it is TempoEvent.Initialized }.subscribe(ts)
+
+        ts.await()
+        verify(mockStorage, times(1)).getCache(stubTs0.id)
+        verifyNoMoreInteractions(mockStorage)
+
+        val expectedTime = 1000L + (stubDC.uptime - 12L)
+        assert.that(tempo.now(), equalTo(expectedTime))
+    }
+
+    fun testCacheRestoringBootCount_validCache_tsFailure() {
+        val ts = TestSubscriber<TempoEvent>()
+        val stubTs0 = StubTimeSource()
+        stubTs0.error = RuntimeException()
+        val stubDC = StubDeviceClocks(supportsBootCount = true)
+        val mockStorage = mock<Storage>()
+
+        val validCache = TimeSourceCache(stubTs0.id, stubDC.estimatedBootTime,
+            requestTime = 1000L, requestDeviceUptime = 12L,
+            bootCount = 12)
         whenever(mockStorage.getCache(stubTs0.id)).thenReturn(validCache)
 
         val tempo = defaultInstance {
@@ -358,7 +385,36 @@ internal class TempoInstanceTests {
         val mockStorage = mock<Storage>()
 
         val validCache = TimeSourceCache(stubTs0.id, stubDC.estimatedBootTime,
-                requestTime = 1000L, requestDeviceUptime = 12L)
+            requestTime = 1000L, requestDeviceUptime = 12L,
+            bootCount = null)
+        whenever(mockStorage.getCache(stubTs0.id)).thenReturn(validCache)
+
+        val tempo = defaultInstance {
+            timeSources = listOf(stubTs0)
+            deviceClocks = stubDC
+            storage = mockStorage
+        }
+        tempo.observeEvents().takeUntil { it is TempoEvent.Initialized }.subscribe(ts)
+
+        ts.await()
+        verify(mockStorage, times(1)).getCache(stubTs0.id)
+        verify(mockStorage, times(1)).putCache(any())
+        verifyNoMoreInteractions(mockStorage)
+
+        val expectedTime = stubTs0.time + ((stubDC.uptime + 1) - stubDC.uptime)
+        assert.that(tempo.now(), equalTo(expectedTime))
+    }
+
+    @Test
+    fun testCacheRestoringBootCount_validCache_tsSuccess() {
+        val ts = TestSubscriber<TempoEvent>()
+        val stubTs0 = StubTimeSource()
+        val stubDC = StubDeviceClocks(supportsBootCount = true)
+        val mockStorage = mock<Storage>()
+
+        val validCache = TimeSourceCache(stubTs0.id, stubDC.estimatedBootTime,
+            requestTime = 1000L, requestDeviceUptime = 12L,
+            bootCount = 12)
         whenever(mockStorage.getCache(stubTs0.id)).thenReturn(validCache)
 
         val tempo = defaultInstance {
@@ -386,7 +442,35 @@ internal class TempoInstanceTests {
         val mockStorage = mock<Storage>()
 
         val validCache = TimeSourceCache(stubTs0.id, stubDC.estimatedBootTime + 60L * 60L * 1000L,
-                requestTime = 1000L, requestDeviceUptime = 12L)
+            requestTime = 1000L, requestDeviceUptime = 12L,
+            bootCount = null)
+        whenever(mockStorage.getCache(stubTs0.id)).thenReturn(validCache)
+
+        val tempo = defaultInstance {
+            timeSources = listOf(stubTs0)
+            deviceClocks = stubDC
+            storage = mockStorage
+        }
+        tempo.observeEvents().subscribe(ts)
+
+        ts.await(500, TimeUnit.MILLISECONDS)
+        verify(mockStorage, times(1)).getCache(stubTs0.id)
+        verifyNoMoreInteractions(mockStorage)
+
+        assert.that(tempo.initialized, equalTo(false))
+    }
+
+    @Test
+    fun testCacheRestoringBootCount_invalidCache_tsFailure() {
+        val ts = TestSubscriber<TempoEvent>()
+        val stubTs0 = StubTimeSource()
+        stubTs0.error = RuntimeException()
+        val stubDC = StubDeviceClocks(supportsBootCount = true)
+        val mockStorage = mock<Storage>()
+
+        val validCache = TimeSourceCache(stubTs0.id, stubDC.estimatedBootTime + 60L * 60L * 1000L,
+            requestTime = 1000L, requestDeviceUptime = 12L,
+            bootCount = 11)
         whenever(mockStorage.getCache(stubTs0.id)).thenReturn(validCache)
 
         val tempo = defaultInstance {
@@ -423,7 +507,34 @@ internal class TempoInstanceTests {
         verify(mockStorage, times(1)).getCache(stubTs0.id)
 
         val expectedCache = TimeSourceCache(stubTs0.id, stubDC.estimatedBootTime,
-                requestTime = stubTs0.time, requestDeviceUptime = stubDC.uptime)
+            requestTime = stubTs0.time, requestDeviceUptime = stubDC.uptime,
+            bootCount = null)
+        verify(mockStorage, times(1)).putCache(expectedCache)
+        verifyNoMoreInteractions(mockStorage)
+    }
+
+    @Test
+    fun testCacheSavingBootCount_tsSuccess() {
+        val ts = TestSubscriber<TempoEvent>()
+        val stubTs0 = StubTimeSource()
+        val stubDC = StubDeviceClocks(supportsBootCount = true)
+        val mockStorage = mock<Storage>()
+
+        whenever(mockStorage.getCache(any())).thenReturn(null)
+
+        val tempo = defaultInstance {
+            timeSources = listOf(stubTs0)
+            deviceClocks = stubDC
+            storage = mockStorage
+        }
+        tempo.observeEvents().takeUntil { it is TempoEvent.Initialized }.subscribe(ts)
+
+        ts.await()
+        verify(mockStorage, times(1)).getCache(stubTs0.id)
+
+        val expectedCache = TimeSourceCache(stubTs0.id, stubDC.estimatedBootTime,
+            requestTime = stubTs0.time, requestDeviceUptime = stubDC.uptime,
+            bootCount = 12)
         verify(mockStorage, times(1)).putCache(expectedCache)
         verifyNoMoreInteractions(mockStorage)
     }
@@ -443,7 +554,7 @@ internal class TempoInstanceTests {
         ts.await(100L, TimeUnit.MILLISECONDS)
 
         val got = ts.events[0]
-        val failureEvents = got.filter { it is TempoEvent.TSSyncFailure }
+        val failureEvents = got.filterIsInstance<TempoEvent.TSSyncFailure>()
         val retries = 3
         assert.that(failureEvents.size, equalTo(retries))
     }
@@ -458,17 +569,18 @@ internal class TempoInstanceTests {
         ts.await(100L, TimeUnit.MILLISECONDS)
 
         val got = ts.events[0]
-        val successEvents = got.filter { it is TempoEvent.TSSyncSuccess }
+        val successEvents = got.filterIsInstance<TempoEvent.TSSyncSuccess>()
         assert.that(successEvents.size, equalTo(1))
     }
 }
 
 data class Initializer(
-        var timeSources: List<TimeSource>,
-        var config: TempoConfig,
-        var storage: Storage,
-        var deviceClocks: DeviceClocks,
-        val scheduler: Scheduler)
+    var timeSources: List<TimeSource>,
+    var config: TempoConfig,
+    var storage: Storage,
+    var deviceClocks: DeviceClocks,
+    val scheduler: Scheduler
+)
 
 
 class StubStorage : Storage {
@@ -487,11 +599,13 @@ class StubStorage : Storage {
     }
 }
 
-class StubDeviceClocks : DeviceClocks {
+class StubDeviceClocks(supportsBootCount: Boolean = false) : DeviceClocks {
     var uptime = 21L
     var calls = 0
     var estimatedBootTime = 500L
+    var bootCount: Int? = if (supportsBootCount) 12 else null
 
+    override fun bootCount(): Int? = bootCount
     override fun uptime(): Long = (uptime + calls++)
     override fun estimatedBootTime(): Long = estimatedBootTime
 }
@@ -505,12 +619,12 @@ class StubTimeSource(val id: String = "stub", val priority: Int = 10) : TimeSour
 
     override fun requestTime(): Single<Long> {
         return Single
-                .fromCallable {
-                    Thread.sleep(timeDelayMs)
-                    error?.let { throw it }
-                    time
-                }
-                .subscribeOn(Schedulers.io())
+            .fromCallable {
+                Thread.sleep(timeDelayMs)
+                error?.let { throw it }
+                time
+            }
+            .subscribeOn(Schedulers.io())
     }
 }
 
