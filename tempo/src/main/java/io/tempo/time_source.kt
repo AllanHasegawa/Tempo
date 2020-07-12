@@ -35,15 +35,17 @@ interface TimeSource {
 }
 
 data class TimeSourceCache(
-        val timeSourceId: String,
-        val estimatedBootTime: Long,
-        val requestDeviceUptime: Long,
-        val requestTime: Long) : Serializable
+    val timeSourceId: String,
+    val estimatedBootTime: Long,
+    val requestDeviceUptime: Long,
+    val requestTime: Long,
+    val bootCount: Int?
+) : Serializable
 
 data class TimeSourceWrapper(
-        val timeSource: TimeSource,
-        val cache: TimeSourceCache) {
-
+    val timeSource: TimeSource,
+    val cache: TimeSourceCache
+) {
     fun nowFromCache(deviceUptime: Long): Long =
-            cache.requestTime + (deviceUptime - cache.requestDeviceUptime)
+        cache.requestTime + (deviceUptime - cache.requestDeviceUptime)
 }

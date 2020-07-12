@@ -17,6 +17,7 @@
 package io.tempo
 
 interface DeviceClocks {
+    fun bootCount(): Int?
     fun uptime(): Long
     fun estimatedBootTime(): Long
 }

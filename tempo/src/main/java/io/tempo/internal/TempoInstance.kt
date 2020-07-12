@@ -33,6 +33,7 @@ import io.tempo.TimeSourceCache
 import io.tempo.TimeSourceWrapper
 import io.tempo.schedulers.NoOpScheduler
 import java.util.concurrent.TimeUnit
+import kotlin.math.abs
 
 internal class TempoInstance(
     val timeSources: List<TimeSource>,
@@ -130,7 +131,9 @@ internal class TempoInstance(
                     timeSourceId = timeSource.config().id,
                     estimatedBootTime = deviceClocks.estimatedBootTime(),
                     requestDeviceUptime = deviceClocks.uptime(),
-                    requestTime = reqTime)
+                    requestTime = reqTime,
+                    bootCount = deviceClocks.bootCount()
+                )
                 TimeSourceWrapper(timeSource, cache)
             }
 
@@ -140,11 +143,15 @@ internal class TempoInstance(
     }
 
     private fun restoreCache() {
-        fun isCacheValid(cache: TimeSourceCache): Boolean {
-            val estimatedBootTime = deviceClocks.estimatedBootTime()
-            val cacheEstimatedBootTime = cache.estimatedBootTime
-            return Math.abs(cacheEstimatedBootTime - estimatedBootTime) <= 5000L
-        }
+        fun isCacheValid(cache: TimeSourceCache): Boolean =
+            when (val bootCount = deviceClocks.bootCount()) {
+                null -> {
+                    val estimatedBootTime = deviceClocks.estimatedBootTime()
+                    val cacheEstimatedBootTime = cache.estimatedBootTime
+                    abs(cacheEstimatedBootTime - estimatedBootTime) <= 5000L
+                }
+                else -> bootCount == cache.bootCount
+            }
 
         timeSources
             .map { source -> source to storage.getCache(source.config().id) }
