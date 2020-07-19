@@ -1,13 +1,14 @@
 package io.tempo.schedulers.internal
 
 import android.content.Context
-import android.util.Log
 import androidx.work.Data
 import androidx.work.Worker
 import androidx.work.WorkerParameters
 import io.tempo.Tempo
-import java.util.concurrent.CountDownLatch
-import java.util.concurrent.TimeUnit
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeoutOrNull
 
 internal class SyncFlowWorker(
     context: Context,
@@ -25,25 +26,22 @@ internal class SyncFlowWorker(
     override fun doWork(): Result =
         try {
             val intervalInMinutes = inputData.getLong(INTERNAL_MINUTES_PKEY, 60)
-            val syncFlow = Tempo.syncFlow()
+            val intervalInMs = intervalInMinutes * 60L * 1000L
 
-            if (syncFlow != null) {
-                val latch = CountDownLatch(1)
+            try {
+                Tempo.start()
+            } catch (_: Throwable) {
+            }
+            Tempo.triggerManualSyncNow()
 
-                val disposable = syncFlow.subscribe({}, { latch.countDown() }, { latch.countDown() })
-                try {
-                    // We will await for the duration of an interval.
-                    // "syncFlow" implements its own timeout mechanism.
-                    latch.await(intervalInMinutes, TimeUnit.MINUTES)
-                } catch (_: Throwable) {
-                    // If we timeout, let it succeed. The "syncFlow" already handles retries.
-                } finally {
-                    disposable.dispose()
-                }
-
-                Result.success()
-            } else {
-                Result.retry()
+            runBlocking {
+                withTimeoutOrNull(intervalInMs) {
+                    while (isActive) {
+                        if (Tempo.isInitialized()) return@withTimeoutOrNull Result.success()
+                        else delay(1_000L)
+                    }
+                    Result.retry()
+                } ?: Result.retry()
             }
         } catch (_: Throwable) {
             Result.retry()

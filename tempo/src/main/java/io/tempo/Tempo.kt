@@ -17,46 +17,116 @@
 package io.tempo
 
 import android.app.Application
-import io.reactivex.Flowable
-import io.reactivex.processors.ReplayProcessor
-import io.reactivex.schedulers.Schedulers
-import io.tempo.device_clocks.AndroidDeviceClocks
 import io.tempo.internal.TempoInstance
+import io.tempo.internal.data.AndroidDeviceClocks
+import io.tempo.internal.data.SharedPrefStorage
+import io.tempo.internal.data.TempoEventLogger
+import io.tempo.internal.domain.useCases.*
+import io.tempo.internal.log
 import io.tempo.schedulers.NoOpScheduler
-import io.tempo.storage.SharedPrefStorage
-import io.tempo.time_sources.SlackSntpTimeSource
-import java.util.concurrent.TimeUnit
+import io.tempo.timeSources.SlackSntpTimeSource
 
-
-object Tempo {
-    private val instanceLock = Any()
+public object Tempo {
     private var instance: TempoInstance? = null
-    private val eventsSubject = ReplayProcessor.createWithTime<TempoEvent>(
-            1000, TimeUnit.MILLISECONDS, Schedulers.io())
+    private val instanceLock = Any()
 
+    private val tempoEventLooper = TempoEventLogger()
 
-    fun initialize(
-            application: Application,
-            timeSources: List<TimeSource> = listOf(SlackSntpTimeSource()),
-            config: TempoConfig = TempoConfig(),
-            storage: Storage = SharedPrefStorage(application),
-            deviceClocks: DeviceClocks = AndroidDeviceClocks(application),
-            scheduler: Scheduler = NoOpScheduler()) {
-
+    @JvmOverloads
+    @JvmStatic
+    public fun initialize(
+        application: Application,
+        timeSources: List<TimeSource> = listOf(SlackSntpTimeSource()),
+        scheduler: Scheduler = NoOpScheduler,
+        autoStart: Boolean = true
+    ) {
         synchronized(instanceLock) {
             require(instance == null) {
                 "Don't call Tempo::initialize more than once per process."
             }
+            require(timeSources.isNotEmpty()) {
+                "'timeSources' must not be empty."
+            }
+            require(timeSources.map { it.config.id }.distinct().size == timeSources.size) {
+                "Duplicate ids in 'timeSources' aren't allowed."
+            }
 
-            instance = TempoInstance(timeSources, config, storage, deviceClocks, scheduler)
-            instance!!.observeEvents().subscribe(eventsSubject)
+            TempoEvent.Initializing().log(tempoEventLooper)
+
+            setupScheduler(scheduler)
+
+            // Data layer
+            val deviceClocks = AndroidDeviceClocks(application)
+            val storage = SharedPrefStorage(application, "tempo-bucket", tempoEventLooper)
+
+            // UseCases
+            val syncTimeSourcesUC = SyncTimeSourcesUC(
+                timeSources, storage, deviceClocks, tempoEventLooper)
+            val periodicallySyncUC = PeriodicallySyncUC(syncTimeSourcesUC)
+            val checkCacheValidityUC = CheckCacheValidityUC(deviceClocks)
+            val getBestAvailableTimeSourceUC =
+                GetBestAvailableTimeSourceUC(timeSources, storage, checkCacheValidityUC)
+            val getTimeNowUC = GetTimeNowUC(deviceClocks)
+
+            instance =
+                TempoInstance(
+                    periodicallySyncUC,
+                    getBestAvailableTimeSourceUC,
+                    getTimeNowUC,
+                    tempoEventLooper
+                )
+
+            if (autoStart) start()
         }
     }
 
-    val initialized get() = instance?.initialized ?: false
-    val config get() = instance?.config
-    fun observeEvents(): Flowable<TempoEvent> = eventsSubject.onBackpressureLatest()
-    fun now() = instance?.now()
-    fun syncFlow(): Flowable<TempoEvent>? = instance?.syncFlow()
-    fun activeTimeWrapper() = instance?.activeTimeWrapper()
+    @JvmStatic
+    public fun isInitialized(): Boolean = instance?.initialized == true
+
+    @JvmStatic
+    public fun nowOrNull(): Long? = requireInstance().nowOrNull()
+
+    @JvmStatic
+    public fun start(): Unit = requireInstance().start()
+
+    @JvmStatic
+    public fun stop(): Unit = requireInstance().stop()
+
+    @JvmStatic
+    public fun triggerManualSyncNow(): Unit = requireInstance().triggerManualActionNow()
+
+    @JvmStatic
+    public fun activeTimeSourceId(): String? = requireInstance().activeTimeSourceId()
+
+    @JvmStatic
+    public fun addEventsListener(listener: TempoEventsListener): Unit =
+        tempoEventLooper.addEventsListener(listener)
+
+    @JvmStatic
+    public fun removeEventsListener(listener: TempoEventsListener): Unit =
+        tempoEventLooper.removeEventsListener(listener)
+
+    private fun setupScheduler(scheduler: Scheduler) {
+        when (scheduler) {
+            is NoOpScheduler -> {
+                TempoEvent.SchedulerSetupSkip().log(tempoEventLooper)
+            }
+            else -> {
+                TempoEvent.SchedulerSetupStart().log(tempoEventLooper)
+                try {
+                    scheduler.setup()
+                    TempoEvent.SchedulerSetupComplete().log(tempoEventLooper)
+                } catch (t: Throwable) {
+                    TempoEvent.SchedulerSetupFailure(t).log(tempoEventLooper)
+                }
+            }
+        }
+    }
+
+    private fun requireInstance(): TempoInstance =
+        try {
+            instance!!
+        } catch (_: Throwable) {
+            throw IllegalStateException("Tempo needs to be initialized")
+        }
 }

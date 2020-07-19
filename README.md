@@ -23,19 +23,16 @@ Initialize the library in your `Application` class:
     
 After the library is initialized, you can get the time with:
 
-    val timeNowInMs = Tempo.now()
+    val timeNowInMs = Tempo.nowOrNull()
     
-`Tempo::now()` will return either a `Long` or a `null`. A `null` is returned when *Tempo* has not been
-initialized yet. When initialized, `Tempo::now()` returns the current
+`Tempo::nowOrNull()` will return either a `Long` or a `null`.
+A `null` is returned when *Tempo* has not been initialized yet.
+When initialized, `Tempo::nowOrNull()` returns the current
 [unix epoch time](https://www.epochconverter.com/) in milliseconds.
 
 You can observe all the events emitted by the library:
 
-    Tempo.observeEvents().subscribe {
-        if (it is Tempo.Initialized) {
-            Log.i("Tempo", "Initialized!")
-        }
-    }
+    Tempo.addEventsListener { event -> Log.d("TempoEvent", event.toString()) }
     
 ## Dependency
 
@@ -111,8 +108,6 @@ Then, add it during initialization:
     Tempo.initialize(this,
       scheduler = WorkManagerScheduler(periodicIntervalMinutes = 60L))
 
-Note: The old `tempo-android-job-scheduler` is **deprecated** and no longer supported.
-
 ## FAQ
 
 1. What happens if the application gets destroyed?
@@ -130,11 +125,12 @@ Then you should use a fallback strategy, like `System.currentTimeMillis()`.
 
 4. Will *Tempo* ever support Java?
 
-If there's enough interest. Open an issue if you would like to use it with Java.
+No official support for Java because Kotlin is now the official language for Android.
+However, it "should" work with Java.
 
 ## License
 
-    Copyright (c) 2017 Allan Yoshio Hasegawa
+    Copyright (c) 2020 Allan Yoshio Hasegawa
     
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.

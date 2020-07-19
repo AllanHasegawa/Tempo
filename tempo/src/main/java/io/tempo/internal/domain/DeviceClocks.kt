@@ -14,12 +14,10 @@
  * limitations under the License.
  */
 
-package io.tempo
+package io.tempo.internal.domain
 
-import kotlinx.coroutines.flow.Flow
-
-public interface Storage {
-    public suspend fun putCache(cache: TimeSourceCache)
-    public fun observeCaches(): Flow<TimeSourceCache>
+internal interface DeviceClocks {
+    fun bootCount(): Int?
+    fun uptime(): Long
+    fun estimatedBootTime(): Long
 }
-

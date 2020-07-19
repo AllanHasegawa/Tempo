@@ -16,24 +16,23 @@
 
 package io.tempo
 
-sealed class TempoEvent(val systemTime: Long = System.currentTimeMillis()) {
-    class SyncStart : TempoEvent()
-    data class SyncSuccess(val activeTimeSource: TimeSourceWrapper) : TempoEvent()
-    class SyncFail : TempoEvent()
+public sealed class TempoEvent(public val systemTime: Long = System.currentTimeMillis()) {
+    public class SyncStart : TempoEvent()
+    public class SyncSuccess : TempoEvent()
+    public class SyncFail : TempoEvent()
 
-    data class TSSyncRequest(val timeSource: TimeSource) : TempoEvent()
-    data class TSSyncSuccess(val wrapper: TimeSourceWrapper) : TempoEvent()
-    data class TSSyncFailure(val timeSource: TimeSource, val error: Throwable?,
-                             val errorMsg: String) : TempoEvent()
+    public data class TSSyncRequest(val timeSource: TimeSource) : TempoEvent()
+    public data class TSSyncSuccess(val timeSourceId: String) : TempoEvent()
+    public data class TSSyncFailure(val timeSource: TimeSource, val error: Throwable) : TempoEvent()
 
-    class Initializing : TempoEvent()
-    class Initialized : TempoEvent()
+    public class Initializing : TempoEvent()
+    public class Initialized : TempoEvent()
 
-    data class CacheSaved(val cache: TimeSourceCache) : TempoEvent()
-    data class CacheRestored(val cache: TimeSourceCache) : TempoEvent()
+    public data class CacheSaved(val cache: TimeSourceCache) : TempoEvent()
+    public data class CacheRestored(val cache: TimeSourceCache) : TempoEvent()
 
-    class SchedulerSetupSkip : TempoEvent()
-    class SchedulerSetupStart : TempoEvent()
-    class SchedulerSetupComplete : TempoEvent()
-    data class SchedulerSetupFailure(val error: Throwable?, val errorMsg: String) : TempoEvent()
+    public class SchedulerSetupSkip : TempoEvent()
+    public class SchedulerSetupStart : TempoEvent()
+    public class SchedulerSetupComplete : TempoEvent()
+    public data class SchedulerSetupFailure(val error: Throwable) : TempoEvent()
 }

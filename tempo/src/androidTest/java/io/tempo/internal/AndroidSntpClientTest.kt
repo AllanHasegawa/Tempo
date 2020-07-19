@@ -16,17 +16,19 @@
 
 package io.tempo.internal
 
-import android.support.test.runner.AndroidJUnit4
+import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.natpryce.hamkrest.assertion.assert
 import com.natpryce.hamkrest.isA
 import com.natpryce.hamkrest.lessThan
-import io.tempo.internal.SntpClient.Result
+import io.tempo.internal.data.AndroidSntpClient
+import io.tempo.internal.domain.SntpClient.Result
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.net.SocketTimeoutException
+import kotlin.math.abs
 
 @RunWith(AndroidJUnit4::class)
-class AndroidSntpClientTest {
+internal class AndroidSntpClientTest {
     private val googleNtp = "time.google.com"
 
     @Test
@@ -44,7 +46,7 @@ class AndroidSntpClientTest {
             val ntpNow = result.ntpTimeMs
             val systemNow = System.currentTimeMillis()
 
-            assert.that(Math.abs(ntpNow - systemNow), lessThan(1000L))
+            assert.that(abs(ntpNow - systemNow), lessThan(1000L))
         }
     }
 

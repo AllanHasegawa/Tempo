@@ -1,6 +1,11 @@
 <resources>
     <string name="app_name">Tempo</string>
 
+    <string name="main_title_tempo_initialized">Tempo initialized</string>
     <string name="main_title_system_time">System.currentTimeMillis()</string>
     <string name="main_title_tempo_time">Tempo.now()</string>
+    <string name="main_title_tempo_active_ts">Active TimeSource</string>
+    <string name="main_start_syncing">Start Syncing</string>
+    <string name="main_stop_syncing">Stop Syncing</string>
+    <string name="main_manual_sync">Trigger Manual Sync</string>
 </resources>

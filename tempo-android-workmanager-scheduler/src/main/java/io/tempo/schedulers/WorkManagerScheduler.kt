@@ -6,7 +6,7 @@ import io.tempo.Scheduler
 import io.tempo.schedulers.internal.SetupWorker
 import java.util.concurrent.TimeUnit
 
-class WorkManagerScheduler(
+public class WorkManagerScheduler(
     private val workName: String = "tempo-workmanager",
     private val periodicIntervalMinutes: Long = 60L
 ) : Scheduler {

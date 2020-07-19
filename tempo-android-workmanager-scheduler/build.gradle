@@ -23,6 +23,6 @@ android {
 dependencies {
     implementation project(':tempo')
     implementation depPaths.kotlinStd
-    implementation depPaths.rxJava
     implementation depPaths.workManager
+    implementation depPaths.coroutines
 }

@@ -16,36 +16,26 @@
 
 package io.tempo
 
-import io.reactivex.Single
-import java.io.Serializable
-
 /**
  * @param[id] A unique id. It'll be used to manage the time source's cache.
  * @param[priority] The time source's priority. Time sources with highers priority are picked first.
  */
-data class TimeSourceConfig(val id: String, val priority: Int)
+public data class TimeSourceConfig(val id: String, val priority: Int)
 
-interface TimeSource {
-    fun config(): TimeSourceConfig
+public interface TimeSource {
+    public val config: TimeSourceConfig
 
     /**
      * @return A single containing the unix epoch time in milliseconds, or an error.
      */
-    fun requestTime(): Single<Long>
+    public suspend fun requestTime(): Long
 }
 
-data class TimeSourceCache(
+public data class TimeSourceCache(
     val timeSourceId: String,
+    val timeSourcePriority: Int,
     val estimatedBootTime: Long,
     val requestDeviceUptime: Long,
     val requestTime: Long,
     val bootCount: Int?
-) : Serializable
-
-data class TimeSourceWrapper(
-    val timeSource: TimeSource,
-    val cache: TimeSourceCache
-) {
-    fun nowFromCache(deviceUptime: Long): Long =
-        cache.requestTime + (deviceUptime - cache.requestDeviceUptime)
-}
+)
