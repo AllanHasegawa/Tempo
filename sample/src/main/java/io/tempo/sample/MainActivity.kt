@@ -19,90 +19,106 @@ package io.tempo.sample
 import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Bundle
-import android.support.v4.app.ActivityCompat
-import android.support.v4.content.ContextCompat
-import android.support.v7.app.AppCompatActivity
-import android.support.v7.widget.LinearLayoutManager
-import android.support.v7.widget.RecyclerView
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import io.reactivex.Flowable
-import io.reactivex.android.schedulers.AndroidSchedulers
-import io.reactivex.disposables.CompositeDisposable
+import android.widget.Toast
+import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import io.tempo.Tempo
 import io.tempo.TempoEvent
-import kotlinx.android.synthetic.main.activity_main.*
-import kotlinx.android.synthetic.main.item_tempo_event.view.*
+import io.tempo.TempoEventsListener
+import io.tempo.sample.databinding.ActivityMainBinding
+import io.tempo.sample.databinding.ItemTempoEventBinding
+import kotlinx.coroutines.*
 import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
-import java.util.concurrent.TimeUnit
+import java.util.*
 
 class MainActivity : AppCompatActivity() {
-    private val createSubscriptions = CompositeDisposable()
+    private lateinit var binding: ActivityMainBinding
+
     private var eventsRvAdapter: EventsRvAdapter? = null
+
+    private var scope: CoroutineScope? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
+        binding = ActivityMainBinding.inflate(layoutInflater)
+        val view = binding.root
+        setContentView(view)
 
-        main_events_rv.layoutManager = LinearLayoutManager(this)
+        binding.mainEventsRv.layoutManager = LinearLayoutManager(this)
         eventsRvAdapter = EventsRvAdapter()
-        main_events_rv.adapter = eventsRvAdapter
+        binding.mainEventsRv.adapter = eventsRvAdapter!!
 
-        Flowable.interval(0, 100, TimeUnit.MILLISECONDS)
-                .onBackpressureLatest()
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe {
+        binding.mainStartSyncingBt.setOnClickListener {
+            try {
+                Tempo.start()
+            } catch (t: Throwable) {
+                Toast.makeText(this, t.toString(), Toast.LENGTH_SHORT).show()
+                t.printStackTrace()
+            }
+        }
+        binding.mainStopSyncingBt.setOnClickListener { Tempo.stop() }
+        binding.mainTriggerManualSyncBt.setOnClickListener { Tempo.triggerManualSyncNow() }
+
+        scope = CoroutineScope(Dispatchers.Main).apply {
+            launch {
+                while (isActive) {
                     val systemTime = System.currentTimeMillis()
-                    val tempoTime = Tempo.now()
+                    val tempoTime = Tempo.nowOrNull()
                     val systemTimeFormatted = formatTimestamp(systemTime)
                     val tempoTimeFormatted = tempoTime?.let { formatTimestamp(it) } ?: "-"
 
-                    main_system_time_formatted_tv.text = systemTimeFormatted
-                    main_tempo_now_formatted_tv.text = tempoTimeFormatted
+                    binding.mainTempoInitializedTv.text = Tempo.isInitialized().toString()
+                    binding.mainSystemTimeFormattedTv.text = systemTimeFormatted
+                    binding.mainTempoNowFormattedTv.text = tempoTimeFormatted
+                    binding.mainTempoActiveTsTv.text = Tempo.activeTimeSourceId()
+
+                    delay(20L)
                 }
-                .also { createSubscriptions.add(it) }
+            }
+        }
 
-
-        Tempo.observeEvents()
-                .onBackpressureBuffer()
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(this::addEventToRv)
-                .also { createSubscriptions.add(it) }
-
+        Tempo.addEventsListener(listener)
 
         if (!hasGPSPermission()) {
             ActivityCompat.requestPermissions(this,
-                    listOf(Manifest.permission.ACCESS_FINE_LOCATION).toTypedArray(), 42)
+                listOf(Manifest.permission.ACCESS_FINE_LOCATION).toTypedArray(), 42)
         }
     }
 
     override fun onDestroy() {
+        Tempo.removeEventsListener(listener)
         eventsRvAdapter = null
-        main_events_rv.adapter = null
-        createSubscriptions.clear()
+        binding.mainEventsRv.adapter = null
+        scope?.cancel()
+        scope = null
         super.onDestroy()
-    }
-
-    private fun addEventToRv(event: TempoEvent) {
-        eventsRvAdapter?.addEvent(event)
     }
 
     private fun hasGPSPermission(): Boolean {
 
         return ContextCompat.checkSelfPermission(this,
-                Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
+            Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
     }
+
+    private val listener = TempoEventsListener { event -> eventsRvAdapter?.addEvent(event) }
 }
 
 class EventsRvAdapter : RecyclerView.Adapter<EventsRvAdapter.VH>() {
     class VH(itemView: View) : RecyclerView.ViewHolder(itemView) {
+        private val binding = ItemTempoEventBinding.bind(itemView)
+
         fun bind(event: TempoEvent) {
-            itemView.item_tempo_time_tv.text = formatTimestamp(event.systemTime)
-            itemView.item_tempo_event_tv.text = formatTempoEvent(event)
+            with(binding) {
+                itemTempoTimeTv.text = formatTimestamp(event.systemTime)
+                itemTempoEventTv.text = formatTempoEvent(event)
+            }
         }
     }
 
@@ -134,31 +150,30 @@ private fun formatTimestamp(time: Long): String {
 }
 
 private fun formatTempoEvent(event: TempoEvent): String =
-        when (event) {
-            is TempoEvent.Initializing -> "Initializing"
-            is TempoEvent.Initialized -> "Initialized"
-            is TempoEvent.TSSyncRequest -> {
-                val tsId = event.timeSource.config().id
-                "TSSyncRequest($tsId)"
-            }
-            is TempoEvent.TSSyncSuccess -> {
-                val tsId = event.wrapper.timeSource.config().id
-                val tsRequestTime = event.wrapper.cache.requestTime
-                "TSSyncSuccess($tsId, $tsRequestTime)"
-            }
-            is TempoEvent.TSSyncFailure -> {
-                Log.e("Tempo", "Error:", event.error)
-                val tsId = event.timeSource.config().id
-                val errorMsg = event.errorMsg
-                "TSSyncFailure($tsId, $errorMsg)"
-            }
-            is TempoEvent.SyncStart -> "SyncStart"
-            is TempoEvent.SyncSuccess -> "SyncSuccess"
-            is TempoEvent.SyncFail -> "SyncFail"
-            is TempoEvent.CacheRestored -> "CacheRestored(${event.cache.timeSourceId})"
-            is TempoEvent.CacheSaved -> "CacheSaved(${event.cache.timeSourceId})"
-            is TempoEvent.SchedulerSetupSkip -> "SchedulerSetupSkip"
-            is TempoEvent.SchedulerSetupStart -> "SchedulerSetupStart"
-            is TempoEvent.SchedulerSetupComplete -> "SchedulerSetupComplete"
-            is TempoEvent.SchedulerSetupFailure -> "SchedulerSetupFailure(${event.error?.localizedMessage})"
+    when (event) {
+        is TempoEvent.Initializing -> "Initializing"
+        is TempoEvent.Initialized -> "Initialized"
+        is TempoEvent.TSSyncRequest -> {
+            val tsId = event.timeSource.config.id
+            "TSSyncRequest($tsId)"
         }
+        is TempoEvent.TSSyncSuccess -> {
+            val tsId = event.timeSourceId
+            "TSSyncSuccess($tsId)"
+        }
+        is TempoEvent.TSSyncFailure -> {
+            Log.e("Tempo", "Error:", event.error)
+            val tsId = event.timeSource.config.id
+            val errorMsg = event.error.message
+            "TSSyncFailure($tsId, $errorMsg)"
+        }
+        is TempoEvent.SyncStart -> "SyncStart"
+        is TempoEvent.SyncSuccess -> "SyncSuccess"
+        is TempoEvent.SyncFail -> "SyncFail"
+        is TempoEvent.CacheRestored -> "CacheRestored(${event.cache.timeSourceId})"
+        is TempoEvent.CacheSaved -> "CacheSaved(${event.cache.timeSourceId})"
+        is TempoEvent.SchedulerSetupSkip -> "SchedulerSetupSkip"
+        is TempoEvent.SchedulerSetupStart -> "SchedulerSetupStart"
+        is TempoEvent.SchedulerSetupComplete -> "SchedulerSetupComplete"
+        is TempoEvent.SchedulerSetupFailure -> "SchedulerSetupFailure(${event.error.localizedMessage})"
+    }

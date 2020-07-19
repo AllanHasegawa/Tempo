@@ -14,12 +14,20 @@
  * limitations under the License.
  */
 
-package io.tempo
+package io.tempo.internal.data
 
-import kotlinx.coroutines.flow.Flow
+import android.content.Context
+import android.os.Build
+import android.os.SystemClock
+import android.provider.Settings
+import io.tempo.internal.domain.DeviceClocks
 
-public interface Storage {
-    public suspend fun putCache(cache: TimeSourceCache)
-    public fun observeCaches(): Flow<TimeSourceCache>
+internal class AndroidDeviceClocks(private val context: Context) : DeviceClocks {
+    override fun bootCount(): Int? =
+        if (Build.VERSION.SDK_INT >= 24)
+            Settings.Global.getInt(context.contentResolver, Settings.Global.BOOT_COUNT)
+        else null
+
+    override fun uptime(): Long = SystemClock.elapsedRealtime()
+    override fun estimatedBootTime(): Long = System.currentTimeMillis() - uptime()
 }
-

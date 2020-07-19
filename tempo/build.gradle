@@ -1,5 +1,6 @@
 apply plugin: 'com.android.library'
 apply plugin: 'kotlin-android'
+apply plugin: "de.mannodermaus.android-junit5"
 
 android {
     compileSdkVersion androidConfig.compileSdkVersion
@@ -18,24 +19,32 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
+
+    testOptions {
+        junitPlatform {
+            filters {
+                engines {
+                    include 'spek2'
+                }
+            }
+        }
+    }
 }
 
 dependencies {
     implementation depPaths.kotlinStd
-    implementation depPaths.rxJava
-    implementation depPaths.rxAndroid
-    implementation depPaths.supportAppCompat
+    implementation depPaths.coroutines
+    implementation depPaths.coroutinesAnd
 
-    testImplementation depPaths.junit
-    testImplementation depPaths.hamkrest
+    testImplementation depPaths.kotlinTestJ5
+    testImplementation depPaths.coroutinesTest
+    testImplementation depPaths.spekDsl
+    testImplementation depPaths.spekRunner
     testImplementation depPaths.kotlinReflect
-    testImplementation depPaths.mockitoKotlin
+    testImplementation depPaths.mockk
 
+    androidTestImplementation depPaths.junitAnd
     androidTestImplementation depPaths.kotlinReflect
     androidTestImplementation depPaths.hamkrest
-    androidTestImplementation depPaths.mockitoKotlin
-    androidTestImplementation depPaths.mockitoAndroid
-    androidTestImplementation(depPaths.espressoCore, {
-        exclude group: 'com.android.support', module: 'support-annotations'
-    })
+    androidTestImplementation depPaths.espressoCore
 }

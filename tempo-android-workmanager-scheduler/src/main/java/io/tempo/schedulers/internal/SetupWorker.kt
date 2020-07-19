@@ -1,7 +1,6 @@
 package io.tempo.schedulers.internal
 
 import android.content.Context
-import android.util.Log
 import androidx.work.*
 import java.util.concurrent.TimeUnit
 
@@ -35,7 +34,7 @@ internal class SetupWorker(
             )
             .build()
 
-        WorkManager.getInstance().enqueueUniquePeriodicWork(
+        WorkManager.getInstance(applicationContext).enqueueUniquePeriodicWork(
             workName,
             ExistingPeriodicWorkPolicy.KEEP,
             request

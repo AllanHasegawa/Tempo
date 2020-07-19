@@ -19,7 +19,7 @@ package io.tempo.schedulers
 import io.tempo.Scheduler
 
 
-class NoOpScheduler : Scheduler {
+public object NoOpScheduler : Scheduler {
     override fun setup() {
         // NoOp
     }

@@ -1,7 +1,7 @@
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
 ext {
-    def versionMajor = 0
-    def versionMinor = 3
+    def versionMajor = 1
+    def versionMinor = 0
     def versionPatch = 0
     def versionCode = versionPatch + versionMinor * 100 + versionMajor * 10000
 
@@ -12,7 +12,7 @@ ext {
             versionCode              : versionCode,
             versionName              : "${versionMajor}.${versionMinor}.${versionPatch}",
 
-            testInstrumentationRunner: "android.support.test.runner.AndroidJUnitRunner"
+            testInstrumentationRunner: "androidx.test.runner.AndroidJUnitRunner"
     ]
 }
 
@@ -20,42 +20,48 @@ buildscript {
     ext {
         depPaths = {
             def versions = [
-                    gradlePlugin  : '4.0.0',
-                    kotlin        : '1.3.70',
-                    supportLib    : '28.0.0',
-                    rxJava        : '2.2.7',
-                    rxAndroid     : '2.1.1',
-                    androidJob    : '1.1.11',
-                    play          : '11.0.2',
-                    workManager   : '1.0.0-rc02',
+                    gradlePlugin  : '4.0.1',
+                    androidJunit5 : '1.6.2.0',
+                    kotlin        : '1.4.0',
+                    coroutines    : '1.3.8',
+                    appCompat     : '1.2.0',
+                    material      : '1.2.0',
+                    workManager   : '2.4.0',
 
                     junit         : '4.12',
+                    junitAnd      : '1.1.2-rc03',
+                    spek          : '2.0.12',
+                    mockk         : '1.10.0',
                     hamkrest      : '1.4.1.0',
                     mockitoKotlin : '1.5.0',
                     mockitoAndroid: '2.8.47',
-                    espresso      : '2.2.2',
+                    espresso      : '3.3.0-rc03',
             ]
 
             [
                     gradlePlugin    : "com.android.tools.build:gradle:$versions.gradlePlugin",
                     kotlinPlugin    : "org.jetbrains.kotlin:kotlin-gradle-plugin:$versions.kotlin",
+                    androidJunit5   : "de.mannodermaus.gradle.plugins:android-junit5:$versions.androidJunit5",
 
-                    kotlinStd       : "org.jetbrains.kotlin:kotlin-stdlib:$versions.kotlin",
+                    kotlinStd       : "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$versions.kotlin",
                     kotlinReflect   : "org.jetbrains.kotlin:kotlin-reflect:$versions.kotlin",
-                    supportAppCompat: "com.android.support:appcompat-v7:$versions.supportLib",
-                    supportDesign   : "com.android.support:design:$versions.supportLib",
-                    supportCardView : "com.android.support:cardview-v7:$versions.supportLib",
-                    rxJava          : "io.reactivex.rxjava2:rxjava:$versions.rxJava",
-                    rxAndroid       : "io.reactivex.rxjava2:rxandroid:$versions.rxAndroid",
-                    androidJob      : "com.evernote:android-job:$versions.androidJob",
-                    playGCM         : "com.google.android.gms:play-services-gcm:$versions.play",
-                    workManager     : "android.arch.work:work-runtime:$versions.workManager",
+                    kotlinTestJ5    : "org.jetbrains.kotlin:kotlin-test-junit5:$versions.kotlin",
+                    coroutines      : "org.jetbrains.kotlinx:kotlinx-coroutines-core:$versions.coroutines",
+                    coroutinesTest  : "org.jetbrains.kotlinx:kotlinx-coroutines-test:$versions.coroutines",
+                    coroutinesAnd   : "org.jetbrains.kotlinx:kotlinx-coroutines-android:$versions.coroutines",
+                    appCompat       : "androidx.appcompat:appcompat:$versions.appCompat",
+                    material        : "com.google.android.material:material:$versions.material",
+                    workManager     : "androidx.work:work-runtime:$versions.workManager",
 
                     junit           : "junit:junit:$versions.junit",
+                    junitAnd        : "androidx.test.ext:junit:$versions.junitAnd",
+                    spekDsl         : "org.spekframework.spek2:spek-dsl-jvm:$versions.spek",
+                    spekRunner      : "org.spekframework.spek2:spek-runner-junit5:$versions.spek",
+                    mockk           : "io.mockk:mockk:$versions.mockk",
                     hamkrest        : "com.natpryce:hamkrest:$versions.hamkrest",
                     mockitoKotlin   : "com.nhaarman:mockito-kotlin-kt1.1:$versions.mockitoKotlin",
                     mockitoAndroid  : "org.mockito:mockito-android:$versions.mockitoAndroid",
-                    espressoCore    : "com.android.support.test.espresso:espresso-core:$versions.espresso",
+                    espressoCore    : "androidx.test.espresso:espresso-core:$versions.espresso",
             ]
         }()
     }
@@ -68,6 +74,7 @@ buildscript {
     dependencies {
         classpath depPaths.gradlePlugin
         classpath depPaths.kotlinPlugin
+        classpath depPaths.androidJunit5
 
         // NOTE: Do not place your application dependencies here; they belong
         // in the individual module build.gradle files
@@ -78,6 +85,15 @@ allprojects {
     repositories {
         google()
         jcenter()
+    }
+
+    if (!project.name.contains("sample")) {
+        // https://youtrack.jetbrains.com/issue/KT-37652
+        tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).all {
+            kotlinOptions {
+                freeCompilerArgs += '-Xexplicit-api=strict'
+            }
+        }
     }
 }
 

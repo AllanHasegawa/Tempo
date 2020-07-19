@@ -16,7 +16,6 @@
 
 package io.tempo
 
-
-interface Scheduler {
-    fun setup()
+public interface Scheduler {
+    public fun setup()
 }
