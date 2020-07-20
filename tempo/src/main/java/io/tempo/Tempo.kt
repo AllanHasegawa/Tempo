@@ -34,7 +34,7 @@ object Tempo {
     private val eventsSubject = ReplayProcessor.createWithTime<TempoEvent>(
             1000, TimeUnit.MILLISECONDS, Schedulers.io())
 
-
+    @JvmOverloads
     fun initialize(
             application: Application,
             timeSources: List<TimeSource> = listOf(SlackSntpTimeSource()),
