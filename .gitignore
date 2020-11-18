@@ -5,3 +5,5 @@
 /build
 /docs
 /.gradle
+/projectFilesBackup/.idea/
+/tempo-android-job-scheduler/build/

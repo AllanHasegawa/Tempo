@@ -18,6 +18,7 @@ package io.tempo.sample
 
 import android.app.Application
 import android.util.Log
+import io.tempo.AutoSyncConfig
 import io.tempo.Tempo
 import io.tempo.schedulers.WorkManagerScheduler
 import io.tempo.timeSources.AndroidGPSTimeSource
@@ -32,7 +33,10 @@ class MyApp : Application() {
         Tempo.initialize(
             application = this,
             timeSources = listOf(SlackSntpTimeSource(), AndroidGPSTimeSource(this)),
-            scheduler = WorkManagerScheduler(periodicIntervalMinutes = 15L)
+            scheduler = WorkManagerScheduler(periodicIntervalMinutes = 15L),
+            autoSyncConfig = AutoSyncConfig.ConstantInterval(
+                intervalDurationMs = 30_000L
+            )
         )
     }
 }
