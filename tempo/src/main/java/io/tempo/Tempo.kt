@@ -37,6 +37,7 @@ public object Tempo {
     public fun initialize(
         application: Application,
         timeSources: List<TimeSource> = listOf(SlackSntpTimeSource()),
+        autoSyncConfig: AutoSyncConfig = AutoSyncConfig.ConstantInterval(),
         scheduler: Scheduler = NoOpScheduler,
         autoStart: Boolean = true
     ) {
@@ -62,7 +63,7 @@ public object Tempo {
             // UseCases
             val syncTimeSourcesUC = SyncTimeSourcesUC(
                 timeSources, storage, deviceClocks, tempoEventLooper)
-            val periodicallySyncUC = PeriodicallySyncUC(syncTimeSourcesUC)
+            val periodicallySyncUC = PeriodicallySyncUC(autoSyncConfig, syncTimeSourcesUC)
             val checkCacheValidityUC = CheckCacheValidityUC(deviceClocks)
             val getBestAvailableTimeSourceUC =
                 GetBestAvailableTimeSourceUC(timeSources, storage, checkCacheValidityUC)

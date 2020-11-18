@@ -96,8 +96,9 @@ interface and then add it during initialization:
       
 ## Schedulers
 
-A device's clock slowly drifts away from an accurate time. Therefore, *Tempo* also offers an
-scheduler to automatically sync its time.
+A device's clock slowly drifts away from an accurate time. By default *Tempo* will periodically sync itself when the app is running.
+
+However, because *Tempo* will not sync while the app is not running then starting the app may require a full sync, which can take time. To be able to sync even when the app is not running and making sure the app will always have a fresh cache, *Tempo* also offers a scheduler using Android's WorkManager.
 
 To add, first include its module to your gradle build file:
 
