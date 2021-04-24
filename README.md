@@ -129,6 +129,10 @@ Then you should use a fallback strategy, like `System.currentTimeMillis()`.
 No official support for Java because Kotlin is now the official language for Android.
 However, it "should" work with Java.
 
+5. Do I need to add any Proguard rules to my project?
+
+No. Tempo should work under a Proguarded app without any specific Proguard rule.
+
 ## License
 
     Copyright (c) 2020 Allan Yoshio Hasegawa
