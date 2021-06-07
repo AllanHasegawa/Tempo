@@ -25,6 +25,7 @@ import io.tempo.internal.domain.useCases.*
 import io.tempo.internal.log
 import io.tempo.schedulers.NoOpScheduler
 import io.tempo.timeSources.SlackSntpTimeSource
+import kotlinx.coroutines.flow.Flow
 
 public object Tempo {
     private var instance: TempoInstance? = null
@@ -62,7 +63,8 @@ public object Tempo {
 
             // UseCases
             val syncTimeSourcesUC = SyncTimeSourcesUC(
-                timeSources, storage, deviceClocks, tempoEventLooper)
+                timeSources, storage, deviceClocks, tempoEventLooper
+            )
             val periodicallySyncUC = PeriodicallySyncUC(autoSyncConfig, syncTimeSourcesUC)
             val checkCacheValidityUC = CheckCacheValidityUC(deviceClocks)
             val getBestAvailableTimeSourceUC =
@@ -84,6 +86,24 @@ public object Tempo {
     @JvmStatic
     public fun isInitialized(): Boolean = instance?.initialized == true
 
+    /**
+     * Get the current time. This should be called only after Tempo
+     * is initialized.
+     *
+     * This function will return the current time if available, otherwise, it'll wait for Tempo
+     * to finish initializing before returning a result.
+     */
+    public fun now(): Flow<Long> = requireInstance().now()
+
+    /**
+     * Get the current time with a non-blocking operation. This should be called only after Tempo
+     * is initialized.
+     *
+     * If this function is called before a successfully sync operation,
+     * or if the cache is outdated, it'll return null.
+     *
+     * Use it with cautious. Prefer using [Tempo::now] for a safer option.
+     */
     @JvmStatic
     public fun nowOrNull(): Long? = requireInstance().nowOrNull()
 

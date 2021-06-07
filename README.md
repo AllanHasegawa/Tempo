@@ -30,6 +30,9 @@ A `null` is returned when *Tempo* has not been initialized yet.
 When initialized, `Tempo::nowOrNull()` returns the current
 [unix epoch time](https://www.epochconverter.com/) in milliseconds.
 
+**Tip:** Avoid using `Tempo::nowOrNull()` for critical operations that requires the time.
+Use `Tempo::now()` as it'll return a result whenever one is available.
+
 You can observe all the events emitted by the library:
 
     Tempo.addEventsListener { event -> Log.d("TempoEvent", event.toString()) }
