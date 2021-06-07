@@ -35,6 +35,7 @@ import io.tempo.TempoEventsListener
 import io.tempo.sample.databinding.ActivityMainBinding
 import io.tempo.sample.databinding.ItemTempoEventBinding
 import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.collect
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -68,6 +69,13 @@ class MainActivity : AppCompatActivity() {
 
         scope = CoroutineScope(Dispatchers.Main).apply {
             launch {
+                async {
+                    delay(10_000L) // simulates late initialization
+                    Tempo.now().collect { now ->
+                        Log.d("TempoEvent", "This is now: ${formatTimestamp(now)}")
+                    }
+                }
+
                 while (isActive) {
                     val systemTime = System.currentTimeMillis()
                     val tempoTime = Tempo.nowOrNull()
@@ -87,8 +95,10 @@ class MainActivity : AppCompatActivity() {
         Tempo.addEventsListener(listener)
 
         if (!hasGPSPermission()) {
-            ActivityCompat.requestPermissions(this,
-                listOf(Manifest.permission.ACCESS_FINE_LOCATION).toTypedArray(), 42)
+            ActivityCompat.requestPermissions(
+                this,
+                listOf(Manifest.permission.ACCESS_FINE_LOCATION).toTypedArray(), 42
+            )
         }
     }
 
@@ -103,8 +113,10 @@ class MainActivity : AppCompatActivity() {
 
     private fun hasGPSPermission(): Boolean {
 
-        return ContextCompat.checkSelfPermission(this,
-            Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
+        return ContextCompat.checkSelfPermission(
+            this,
+            Manifest.permission.ACCESS_FINE_LOCATION
+        ) == PackageManager.PERMISSION_GRANTED
     }
 
     private val listener = TempoEventsListener { event -> eventsRvAdapter?.addEvent(event) }

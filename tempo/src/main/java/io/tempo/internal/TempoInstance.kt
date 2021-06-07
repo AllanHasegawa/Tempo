@@ -25,8 +25,10 @@ import io.tempo.internal.domain.useCases.PeriodicallySyncUC
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.BroadcastChannel
 import kotlinx.coroutines.channels.Channel.Factory.BUFFERED
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.map
 
 internal class TempoInstance(
     private val periodicallySyncUC: PeriodicallySyncUC,
@@ -73,5 +75,8 @@ internal class TempoInstance(
     }
 
     fun nowOrNull(): Long? = activeTimeWrapper?.let(getTimeNowUC::invoke)
+
+    fun now(): Flow<Long> = getBestAvailableTimeSourceUC().map(getTimeNowUC::invoke)
+
     fun activeTimeSourceId(): String? = activeTimeWrapper?.timeSource?.config?.id
 }
