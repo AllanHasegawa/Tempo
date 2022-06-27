@@ -93,6 +93,8 @@ public object Tempo {
      * This function will return the current time if available, otherwise, it'll wait for Tempo
      * to finish initializing before returning a result.
      */
+
+    @JvmStatic
     public fun now(): Flow<Long> = requireInstance().now()
 
     /**
