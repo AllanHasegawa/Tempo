@@ -1,7 +1,7 @@
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
 ext {
     def versionMajor = 1
-    def versionMinor = 2
+    def versionMinor = 3
     def versionPatch = 0
     def versionCode = versionPatch + versionMinor * 100 + versionMajor * 10000
 
