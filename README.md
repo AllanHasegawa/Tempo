@@ -1,3 +1,9 @@
+# This is outdated
+
+Please see: https://android-developers.googleblog.com/2025/02/trustedtime-api-introducing-reliable-approach-to-time-keeping-for-apps.html
+
+---
+
 # Tempo
 
 A Kotlin library for Android to get the current time from multiple sources: SNTP, GPS; or your own time source.
