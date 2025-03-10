@@ -24,15 +24,18 @@ import android.location.Location
 import android.location.LocationListener
 import android.location.LocationManager
 import android.os.Bundle
+import android.os.SystemClock
 import androidx.core.content.ContextCompat
 import io.tempo.TimeSource
 import io.tempo.TimeSourceConfig
+import io.tempo.TimeSyncInfo
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 
 public class AndroidGPSTimeSource(
@@ -48,7 +51,7 @@ public class AndroidGPSTimeSource(
     private data class GPSInfo(val provider: String, val time: Long)
 
     @SuppressLint("MissingPermission")
-    override suspend fun requestTime(): Long =
+    override suspend fun requestTime(): TimeSyncInfo =
         withContext(Dispatchers.Main) {
             callbackFlow<GPSInfo> {
                 if (!hasGPSPermission()) throw PermissionNotSet()
@@ -74,8 +77,8 @@ public class AndroidGPSTimeSource(
                 awaitClose { mgr.removeUpdates(listener) }
             }.flowOn(Dispatchers.Main)
                 .filter { it.provider == LocationManager.GPS_PROVIDER }
+                .map { TimeSyncInfo(it.time, SystemClock.elapsedRealtime()) }
                 .first()
-                .time
         }
 
     private fun hasGPSPermission() =

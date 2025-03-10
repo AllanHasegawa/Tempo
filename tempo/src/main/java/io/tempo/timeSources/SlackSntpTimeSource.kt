@@ -18,6 +18,7 @@ package io.tempo.timeSources
 
 import io.tempo.TimeSource
 import io.tempo.TimeSourceConfig
+import io.tempo.TimeSyncInfo
 import io.tempo.internal.data.AndroidSntpClient
 import io.tempo.internal.domain.SntpClient.Result
 import kotlinx.coroutines.Dispatchers
@@ -50,7 +51,7 @@ public class SlackSntpTimeSource(
     public class AllRequestsFailure(errorMsg: String, cause: Throwable?)
         : RuntimeException(errorMsg, cause)
 
-    override suspend fun requestTime(): Long =
+    override suspend fun requestTime(): TimeSyncInfo =
         withContext(Dispatchers.IO) {
             val hostAddress = AndroidSntpClient.queryHostAddress(ntpPool)
             val rawResults = (1..5)
@@ -64,7 +65,12 @@ public class SlackSntpTimeSource(
                 // If at least one succeeds, sort by 'round trip time' and get median.
                 successes
                     .sortedBy { it.roundTripTimeMs }
-                    .map { it.ntpTimeMs }
+                    .map {
+                        TimeSyncInfo(
+                            requestTime = it.ntpTimeMs,
+                            requestUptime = it.uptimeReferenceMs,
+                        )
+                    }
                     .elementAt(successes.size / 2)
             } else {
                 // If all fail, throw 'AllRequestsFailure' exception.

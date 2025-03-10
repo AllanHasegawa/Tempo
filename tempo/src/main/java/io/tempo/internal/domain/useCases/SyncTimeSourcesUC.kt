@@ -56,8 +56,8 @@ internal class SyncTimeSourcesUC(
             timeSourceId = timeSource.config.id,
             timeSourcePriority = timeSource.config.priority,
             estimatedBootTime = deviceClocks.estimatedBootTime(),
-            requestDeviceUptime = deviceClocks.uptime(),
-            requestTime = requestTime,
+            requestDeviceUptime = requestTime.requestUptime,
+            requestTime = requestTime.requestTime,
             bootCount = deviceClocks.bootCount()
         )
 

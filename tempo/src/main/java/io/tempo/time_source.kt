@@ -22,13 +22,11 @@ package io.tempo
  */
 public data class TimeSourceConfig(val id: String, val priority: Int)
 
+public data class TimeSyncInfo(val requestTime: Long, val requestUptime: Long)
+
 public interface TimeSource {
     public val config: TimeSourceConfig
-
-    /**
-     * @return A single containing the unix epoch time in milliseconds, or an error.
-     */
-    public suspend fun requestTime(): Long
+    public suspend fun requestTime(): TimeSyncInfo
 }
 
 public data class TimeSourceCache(
